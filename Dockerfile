@@ -15,7 +15,8 @@ RUN npm install --global yarn
 RUN conda install constructor
 RUN yarn install
 RUN yarn create_env_installer:linux
-RUN ls -lh dist
+RUN ls -lh ./
+RUN find ./ -name '*.deb'
 # RUN yarn dist:linux
 RUN dpkg -i dist/JupyterLab.deb
 
