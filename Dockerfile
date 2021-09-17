@@ -15,7 +15,8 @@ RUN npm install --global yarn
 RUN conda install constructor
 RUN yarn install
 RUN yarn create_env_installer:linux
-RUN yarn dist:linux
+RUN ls -lh dist
+# RUN yarn dist:linux
 RUN dpkg -i dist/JupyterLab.deb
 
 # TODO tini + run command
