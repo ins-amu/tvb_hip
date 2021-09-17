@@ -10,6 +10,7 @@ RUN git clone https://github.com/jupyterlab/jupyterlab_app
 
 # single RUN once it works
 WORKDIR /opt/jupyterlab_app
+RUN conda install npm
 RUN npm install --global yarn
 RUN conda install constructor
 RUN yarn install
