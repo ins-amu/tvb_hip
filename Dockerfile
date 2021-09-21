@@ -20,6 +20,7 @@ WORKDIR /home/hip
 # ADD theme.json /home/hip/.jupyter/lab/user-settings/@jupyterlab/apputils-extension/themes.jupyterlab-settings
 
 # setup tini to avoid zombies
+USER root
 ENV tiniver v0.19.0
 ADD https://github.com/krallin/tini/releases/download/${tiniver}/tini /tini
 RUN chmod +x /tini
