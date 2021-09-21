@@ -1,23 +1,37 @@
-FROM continuumio/miniconda3
+ARG ubver=20.04
+FROM ubuntu:$ubver
 
-RUN apt-get update
+# setup jlab env & app
+RUN mkdir /apps
+ADD build-jlab.sh /apps/tvb-hip-build-jlab.sh
+RUN bash /apps/tvb-hip-build-jlab.sh
 
-# TODO rest of build
+ADD build-jlab2.sh /apps/tvb-hip-build-jlab2.sh
+RUN bash /apps/tvb-hip-build-jlab2.sh
 
-# TODO checkout at commit-ish or curl a release
-WORKDIR /opt
-RUN git clone https://github.com/jupyterlab/jupyterlab_app
+# everything should run under hip user
+RUN useradd -m hip -s /usr/bin/bash
+USER hip
+ENV PS1='hip@tvb:\w '
+WORKDIR /home/hip
 
-# single RUN once it works
-WORKDIR /opt/jupyterlab_app
-RUN conda install nodejs
-RUN npm install --global yarn
-RUN conda install constructor
-RUN yarn install
-RUN yarn create_env_installer:linux
-RUN ls -lh ./
-RUN find ./ -name '*.deb'
-# RUN yarn dist:linux
-RUN dpkg -i dist/JupyterLab.deb
+# customize jlab a bit
+# RUN mkdir -p /home/hip/.jupyter/lab/user-settings/@jupyterlab/apputils-extension
+# ADD theme.json /home/hip/.jupyter/lab/user-settings/@jupyterlab/apputils-extension/themes.jupyterlab-settings
 
-# TODO tini + run command
+
+
+# setup tini to avoid zombies
+USER root
+RUN apt-get update && apt-get install -y fonts-comic-neue fonts-ubuntu
+
+ENV tiniver v0.19.0
+ADD https://github.com/krallin/tini/releases/download/${tiniver}/tini /tini
+RUN chmod +x /tini
+
+ENV PATH=/apps/tvb-hip/jlab_server/bin:$PATH
+
+USER hip
+ENTRYPOINT ["/tini", "--"]
+WORKDIR /apps/tvb-hip/jupyterlab_app
+CMD yarn start --no-sandbox

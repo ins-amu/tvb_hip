@@ -1,0 +1,59 @@
+{
+    // Document Manager
+    // @jupyterlab/docmanager-extension:plugin
+    // Document Manager settings.
+    // ***************************************
+
+    // Autosave Documents
+    // Whether to autosave documents
+    "autosave": true,
+
+    // Autosave Interval
+    // Length of save interval in seconds
+    "autosaveInterval": 120,
+
+    // Default Viewers
+    // Overrides for the default viewers for file types.
+    // Specify a mapping from file type name to document viewer name, for example:
+    // 
+    // defaultViewers: {
+    //   markdown: "Markdown Preview"
+    // }
+    // 
+    // If you specify non-existent file types or viewers, or if a viewer cannot
+    // open a given file type, the override will not function.
+    // 
+    // Available viewers:
+    // Image    
+    // Image (Text)    
+    // JSON    
+    // PDF    
+    // Notebook    
+    // Markdown Preview    
+    // Workspace loader    
+    // CSVTable    
+    // TSVTable    
+    // Editor
+    // 
+    // Available file types:
+    // text    
+    // notebook    
+    // directory    
+    // markdown    
+    // PDF    
+    // python    
+    // json    
+    // julia    
+    // csv    
+    // tsv    
+    // r    
+    // yaml    
+    // svg    
+    // tiff    
+    // jpeg    
+    // gif    
+    // png    
+    // bmp    
+    // jupyterlab-workspace
+    "defaultViewers": {}
+}
