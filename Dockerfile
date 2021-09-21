@@ -19,12 +19,7 @@ WORKDIR /home/hip
 # RUN mkdir -p /home/hip/.jupyter/lab/user-settings/@jupyterlab/apputils-extension
 # ADD theme.json /home/hip/.jupyter/lab/user-settings/@jupyterlab/apputils-extension/themes.jupyterlab-settings
 
-
-
 # setup tini to avoid zombies
-USER root
-RUN apt-get update && apt-get install -y fonts-comic-neue fonts-ubuntu
-
 ENV tiniver v0.19.0
 ADD https://github.com/krallin/tini/releases/download/${tiniver}/tini /tini
 RUN chmod +x /tini
