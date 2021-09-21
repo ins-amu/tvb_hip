@@ -25,8 +25,10 @@ ADD https://github.com/krallin/tini/releases/download/${tiniver}/tini /tini
 RUN chmod +x /tini
 
 ENV PATH=/apps/tvb-hip/jlab_server/bin:$PATH
+ADD start.sh /apps/tvb-hip/start.sh
+RUN chmod +x /apps/tvb-hip/start.sh
 
 USER hip
 ENTRYPOINT ["/tini", "--"]
 WORKDIR /apps/tvb-hip/jupyterlab_app
-CMD yarn start --no-sandbox
+CMD /apps/tvb-hip/start.sh
