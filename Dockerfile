@@ -2,22 +2,22 @@ ARG ubver=20.04
 FROM ubuntu:$ubver
 
 # setup jlab env & app
-RUN mkdir /apps
-ADD build-jlab.sh /apps/tvb-hip-build-jlab.sh
-RUN bash /apps/tvb-hip-build-jlab.sh
+RUN mkdir -p /apps/tvb-hip
+# ADD build-jlab.sh /apps/tvb-hip-build-jlab.sh
+# RUN bash /apps/tvb-hip-build-jlab.sh
 
-ADD build-jlab2.sh /apps/tvb-hip-build-jlab2.sh
-RUN bash /apps/tvb-hip-build-jlab2.sh
+# ADD build-jlab2.sh /apps/tvb-hip-build-jlab2.sh
+# RUN bash /apps/tvb-hip-build-jlab2.sh
 
-ENV PATH=/apps/tvb-hip/jlab_server/bin:$PATH
-ADD start.sh /apps/tvb-hip/start.sh
-RUN chmod +x /apps/tvb-hip/start.sh
+# ENV PATH=/apps/tvb-hip/jlab_server/bin:$PATH
+# ADD start.sh /apps/tvb-hip/start.sh
+# RUN chmod +x /apps/tvb-hip/start.sh
 
-#Mrtrix
-RUN conda install -c mrtrix3 mrtrix3
+# #Mrtrix
+# RUN conda install -c mrtrix3 mrtrix3
 
 #FSL
-RUN wget https://fsl.fmrib.ox.ac.uk/fsldownloads/fslinstaller.py
+RUN curl -LO https://fsl.fmrib.ox.ac.uk/fsldownloads/fslinstaller.py
 RUN echo "" | python fslinstaller.py
 RUN mv /usr/local/fsl /apps/tvb-hip/
 ENV FSLDIR /apps/tvb-hip/fsl
