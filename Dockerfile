@@ -14,10 +14,7 @@ ADD start.sh /apps/tvb-hip/start.sh
 RUN chmod +x /apps/tvb-hip/start.sh
 
 #Mrtrix
-RUN apt-get update && apt-get install -y wget git g++ python python-numpy libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev libfftw3-dev libtiff5-dev dc
-RUN cd /apps/tvb-hip && git clone https://github.com/MRtrix3/mrtrix3.git
-RUN cd /apps/tvb-hip/mrtrix3 && export EIGEN_CFLAGS="-isystem /usr/include/eigen3" && ./configure
-RUN cd /apps/tvb-hip/mrtrix3 && NUMBER_OF_PROCESSORS=1 ./build
+RUN conda install -c mrtrix3 mrtrix3
 
 #FSL
 RUN wget https://fsl.fmrib.ox.ac.uk/fsldownloads/fslinstaller.py
