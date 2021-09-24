@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'master'
+      - pack-software
 
 env:
   REGISTRY: ghcr.io
