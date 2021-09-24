@@ -9,27 +9,28 @@ RUN bash /apps/tvb-hip-build-jlab.sh
 ADD build-jlab2.sh /apps/tvb-hip-build-jlab2.sh
 RUN bash /apps/tvb-hip-build-jlab2.sh
 
-# everything should run under hip user
-RUN useradd -m hip -s /usr/bin/bash
-USER hip
-ENV PS1='hip@tvb:\w '
-WORKDIR /home/hip
-
-# customize jlab a bit
-# RUN mkdir -p /home/hip/.jupyter/lab/user-settings/@jupyterlab/apputils-extension
-# ADD theme.json /home/hip/.jupyter/lab/user-settings/@jupyterlab/apputils-extension/themes.jupyterlab-settings
-
-# setup tini to avoid zombies
-USER root
-ENV tiniver v0.19.0
-ADD https://github.com/krallin/tini/releases/download/${tiniver}/tini /tini
-RUN chmod +x /tini
-
 ENV PATH=/apps/tvb-hip/jlab_server/bin:$PATH
 ADD start.sh /apps/tvb-hip/start.sh
 RUN chmod +x /apps/tvb-hip/start.sh
 
-USER hip
-ENTRYPOINT ["/tini", "--"]
-WORKDIR /apps/tvb-hip/jupyterlab_app
-CMD /apps/tvb-hip/start.sh
+#Mrtrix
+RUN apt-get update && apt-get install -y wget git g++ python python-numpy libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev libfftw3-dev libtiff5-dev dc
+RUN cd /apps/tvb-hip && git clone https://github.com/MRtrix3/mrtrix3.git
+RUN cd /apps/tvb-hip/mrtrix3 && export EIGEN_CFLAGS="-isystem /usr/include/eigen3" && ./configure
+RUN cd /apps/tvb-hip/mrtrix3 && NUMBER_OF_PROCESSORS=1 ./build
+
+#FSL
+RUN wget https://fsl.fmrib.ox.ac.uk/fsldownloads/fslinstaller.py
+RUN echo "" | python fslinstaller.py
+RUN mv /usr/local/fsl /apps/tvb-hip/
+ENV FSLDIR /apps/tvb-hip/fsl
+RUN . ${FSLDIR}/etc/fslconf/fsl.sh
+ENV PATH ${FSLDIR}/bin:${PATH}
+
+#Freesurfer
+RUN apt-get install -y tcsh bc libgomp1 perl-modules
+RUN curl -LO https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/7.2.0/freesurfer_7.2.0_amd64.deb
+RUN dpkg -i freesurfer_7.2.0_amd64.deb && apt-get install -f
+RUN find / -name 'recon-all'
+# COPY license.txt /apps/tvb-hip/freesurfer-stable/freesurfer/license.txt
+ENV FREESURFER_HOME /apps/tvb-hip/freesurfer-stable/freesurfer
