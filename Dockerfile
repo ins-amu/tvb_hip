@@ -17,6 +17,7 @@ RUN mkdir -p /apps/tvb-hip
 # RUN conda install -c mrtrix3 mrtrix3
 
 #FSL
+RUN apt-get update && apt-get install -y python curl
 RUN curl -LO https://fsl.fmrib.ox.ac.uk/fsldownloads/fslinstaller.py
 RUN echo "" | python fslinstaller.py
 RUN mv /usr/local/fsl /apps/tvb-hip/
