@@ -26,7 +26,7 @@ RUN mkdir -p /apps/tvb-hip
 # ENV PATH ${FSLDIR}/bin:${PATH}
 
 #Freesurfer
-RUN apt-get install -y curl
+RUN apt-get update && apt-get install -y curl
 RUN curl -qLO https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/7.2.0/freesurfer_7.2.0_amd64.deb
 RUN dpkg -i freesurfer_7.2.0_amd64.deb; apt-get install -f
 RUN find / -name 'recon-all'
