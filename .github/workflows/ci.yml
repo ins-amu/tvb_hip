@@ -4,7 +4,7 @@ on:
   push:
 
 jobs:
-  build-and-push-image:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -16,3 +16,14 @@ jobs:
 
       - name: build jlab app
         run: sudo bash build-jlab.sh
+
+      - name: copy scripts to app folder
+        run: cp start.sh /apps/tvb-hip/ && install-packages.sh /apps/tvb-hip/
+
+      - name: create package
+        run: sudo tar xzf tvb-hip-app.tar.gz /apps/tvb-hip
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: tarball
+          path: tvb-hip-app.tar.gz
