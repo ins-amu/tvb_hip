@@ -12,13 +12,13 @@ jobs:
         uses: actions/checkout@v2
 
       - name: install apt packages
-        run: sudo bash install-packages.sh
+        run: sudo bin/install-packages.sh
 
       - name: build jlab app
-        run: sudo bash build-jlab.sh
+        run: sudo bin/build-jlab.sh
 
       - name: copy scripts to app folder
-        run: cp start.sh /apps/tvb-hip/ && install-packages.sh /apps/tvb-hip/
+        run: sudo cp -r bin /apps/tvb-hip/
 
       - name: create package
         run: sudo tar xzf tvb-hip-app.tar.gz /apps/tvb-hip
