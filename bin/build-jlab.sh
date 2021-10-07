@@ -37,6 +37,15 @@ npm install -g yarn
 # install mrtrix
 conda install -c mrtrix3 mrtrix3
 
-# clean up
-# apt-get clean
-# rm -rf /var/lib/apt/lists/*
+# then fsl
+pushd /apps/tvb-hip
+wget https://fsl.fmrib.ox.ac.uk/fsldownloads/fslinstaller.py
+RUN echo "" | python fslinstaller.py
+mv /usr/local/fsl ./
+
+# finally freesurfer
+wget https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/7.2.0/freesurfer-linux-ubuntu18_amd64-7.2.0.tar.gz
+tar xzf freesurfer-linux-ubuntu18_amd64-7.2.0.tar.gz
+
+
+popd

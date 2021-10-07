@@ -16,6 +16,9 @@ jobs:
 
       - name: build jlab app
         run: sudo bin/build-jlab.sh
+      
+      - name: (debug)
+        run:  ls /apps/tvb-hip
 
       - name: copy scripts to app folder
         run: sudo cp -r bin /apps/tvb-hip/
