@@ -12,7 +12,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: install apt packages
-        run: ./install-packages.sh
+        run: bash install-packages.sh
 
       - name: build jlab app
-        run: ./build-jlab.sh
+        run: bash build-jlab.sh
