@@ -21,7 +21,7 @@ jobs:
         run: sudo cp -r bin /apps/tvb-hip/
 
       - name: create package
-        run: sudo tar xzf tvb-hip-app.tar.gz /apps/tvb-hip
+        run: sudo tar czf tvb-hip-app.tar.gz /apps/tvb-hip
 
       - uses: actions/upload-artifact@v2
         with:
