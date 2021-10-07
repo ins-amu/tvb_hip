@@ -40,8 +40,8 @@ conda install -c mrtrix3 mrtrix3
 # then fsl
 pushd /apps/tvb-hip
 wget https://fsl.fmrib.ox.ac.uk/fsldownloads/fslinstaller.py
-2to3 -w fslinstaller.py
-echo "" | python fslinstaller.py
+# 2to3 -w fslinstaller.py
+echo "" | python2 fslinstaller.py > fslinstall.log
 mv /usr/local/fsl ./
 
 # finally freesurfer
