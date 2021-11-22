@@ -13,8 +13,9 @@ mkdir -p $tmpdir
 pushd $tmpdir
 
 for a in a b c d e f g h i j k l m; do
-    curl -LO ${base_url}/${app_ver}/${archive}.part.a{$a}
+    curl -LO ${base_url}/${app_ver}/${archive}.part.a{$a} &
 done
+wait
 
 ls -lh
 cat $(ls ${archive}.part.*) > ${archive}

@@ -8,6 +8,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
+      # TODO
       - name: Checkout repository
         uses: actions/checkout@v2
 
@@ -15,7 +17,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y curl pigz
 
       - name: pull app
-        run: APP_VERSION=v0.1 bash pull_app.sh
+        run: APP_VERSION=v0.1 parallel=true bash pull_app.sh
 
       # - name: install apt packages
       #   run: sudo bin/install-packages.sh

@@ -1,0 +1,5 @@
+
+build:
+  stage: build
+  script:
+    - docker pull ubuntu
