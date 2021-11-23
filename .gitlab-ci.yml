@@ -1,7 +1,7 @@
 default:
   image: ubuntu
   tags:
-    - docker
+    - docker-runner
 
 b-jlab:
   stage: build
