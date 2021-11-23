@@ -9,10 +9,11 @@ b-jlab:
     - bash bin/install-packages.sh
     - bash bin/build-jlab.sh
     - tar czf jlab.tar.gz /apps/tvb-hip
-  artifacts:
-    paths:
-      - jlab.tar.gz
-    expire_in: 1 week
+    - ls -lh
+  # artifacts:
+  #   paths:
+  #     - jlab.tar.gz
+  #   expire_in: 1 week
 
 b-fs:
   stage: build
@@ -20,9 +21,11 @@ b-fs:
     - bash bin/install-packages.sh
     - bash bin/install-freesurfer.sh
     - tar czf fs.tar.gz /apps/tvb-hip
-  artifacts:
-    paths:
-      - fs.tar.gz
+    - ls -lh
+  # artifacts:
+  #   paths:
+  #     - fs.tar.gz
+  #   expire_in: 1 week
 
 b-fsl:
   stage: build
@@ -30,6 +33,8 @@ b-fsl:
     - bash bin/install-packages.sh
     - bash bin/install-fsl.sh
     - tar czf fsl.tar.gz /apps/tvb-hip
-  artifacts:
-    paths:
-      - fsl.tar.gz
+    - ls -lh
+  # artifacts:
+  #   paths:
+  #     - fsl.tar.gz
+  #   expire_in: 1 week
