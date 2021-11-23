@@ -1,7 +1,10 @@
+default:
+  image: ubuntu
+  tags:
+    - docker
 
 b-jlab:
   stage: build
-  image: ubuntu
   script:
     - bash bin/install-packages.sh
     - bash bin/build-jlab.sh
@@ -13,7 +16,6 @@ b-jlab:
 
 b-fs:
   stage: build
-  image: ubuntu
   script:
     - bash bin/install-packages.sh
     - bash bin/install-freesurfer.sh
@@ -24,7 +26,6 @@ b-fs:
 
 b-fsl:
   stage: build
-  image: ubuntu
   script:
     - bash bin/install-packages.sh
     - bash bin/install-fsl.sh
