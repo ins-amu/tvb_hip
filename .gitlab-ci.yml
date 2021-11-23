@@ -9,3 +9,7 @@ build:
     - docker exec build tar czf /app.tar.gz /apps/tvb-hip
     - docker cp build:/app.tar.gz ./app.tar.gz
     - docker rm -f build
+  artifacts:
+    paths:
+      - app.tar.gz
+    expire_in: 8 week
