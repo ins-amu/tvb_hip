@@ -7,5 +7,5 @@ build:
     - docker exec -i build bash < ./bin/install-packages.sh
     - docker exec -i build bash < ./bin/build-jlab.sh
     - docker exec build tar czf /app.tar.gz /apps/tvb-hip
-    - docker cp /app.tar.gz ./app.tar.gz
+    - docker cp build:/app.tar.gz ./app.tar.gz
     - docker rm -f build
