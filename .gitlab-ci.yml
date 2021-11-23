@@ -1,45 +1,42 @@
 
 b-jlab:
   stage: build
+  image: ubuntu
   script:
-    - docker pull ubuntu
-    - docker run -d --name build ubuntu tail -f /dev/null
-    - docker exec -i build bash < ./bin/install-packages.sh
-    - docker exec -i build bash < ./bin/build-jlab.sh
-    - docker exec build tar czf /app.tar.gz /apps/tvb-hip
-    - docker cp build:/app.tar.gz ./jlab.tar.gz
-    - docker rm -f build
+    - bash bin/install-packages.sh
+    - bash bin/build-jlab.sh
+    - tar czf /jlab.tar.gz /apps/tvb-hip
   artifacts:
     paths:
-      - jlab.tar.gz
+      - /jlab.tar.gz
     expire_in: 1 week
 
-b-fs:
-  stage: build
-  script:
-    - docker pull ubuntu
-    - docker run -d --name b-fs ubuntu tail -f /dev/null
-    - docker exec -i b-fs bash < ./bin/install-packages.sh
-    - docker exec -i b-fs bash < ./bin/build-freesurfer.sh
-    - docker exec b-fs tar czf /app.tar.gz /apps/tvb-hip
-    - docker cp b-fs:/app.tar.gz ./fs.tar.gz
-    - docker rm -f b-fs
-  artifacts:
-    paths:
-      - fs.tar.gz
-    expire_in: 1 week
-
-b-fsl:
-  stage: build
-  script:
-    - docker pull ubuntu
-    - docker run -d --name b-fsl ubuntu tail -f /dev/null
-    - docker exec -i b-fsl bash < ./bin/install-packages.sh
-    - docker exec -i b-fsl bash < ./bin/build-fsl.sh
-    - docker exec b-fsl tar czf /app.tar.gz /apps/tvb-hip
-    - docker cp b-fsl:/app.tar.gz ./fsl.tar.gz
-    - docker rm -f b-fsl
-  artifacts:
-    paths:
-      - fs.tar.gz
-    expire_in: 1 week
+# b-fs:
+#   stage: build
+#   script:
+#     - docker pull ubuntu
+#     - docker run -d --name b-fs ubuntu tail -f /dev/null
+#     - docker exec -i b-fs bash < ./bin/install-packages.sh
+#     - docker exec -i b-fs bash < ./bin/build-freesurfer.sh
+#     - docker exec b-fs tar czf /app.tar.gz /apps/tvb-hip
+#     - docker cp b-fs:/app.tar.gz ./fs.tar.gz
+#     - docker rm -f b-fs
+#   artifacts:
+#     paths:
+#       - fs.tar.gz
+#     expire_in: 1 week
+#
+# b-fsl:
+#   stage: build
+#   script:
+#     - docker pull ubuntu
+#     - docker run -d --name b-fsl ubuntu tail -f /dev/null
+#     - docker exec -i b-fsl bash < ./bin/install-packages.sh
+#     - docker exec -i b-fsl bash < ./bin/build-fsl.sh
+#     - docker exec b-fsl tar czf /app.tar.gz /apps/tvb-hip
+#     - docker cp b-fsl:/app.tar.gz ./fsl.tar.gz
+#     - docker rm -f b-fsl
+#   artifacts:
+#     paths:
+#       - fsl.tar.gz
+#     expire_in: 1 week
