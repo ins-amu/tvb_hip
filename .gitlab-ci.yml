@@ -5,11 +5,24 @@ b-jlab:
   script:
     - bash bin/install-packages.sh
     - bash bin/build-jlab.sh
-    - tar czf /jlab.tar.gz /apps/tvb-hip
+    - pwd
+    - tar czf jlab.tar.gz /apps/tvb-hip
   artifacts:
     paths:
-      - /jlab.tar.gz
+      - jlab.tar.gz
     expire_in: 1 week
+
+b-fs:
+  stage: build
+  image: ubuntu
+  script:
+    - bash bin/install-packages.sh
+    - bash bin/build-freesurfer.sh
+    - pwd
+    - tar czf fs.tar.gz /apps/tvb-hip
+  artifacts:
+    paths:
+      - fs.tar.gz
 
 # b-fs:
 #   stage: build
