@@ -42,23 +42,23 @@ conda install -c mrtrix3 mrtrix3
 pip install tvb-data tvb-library tqdm
 
 # then fsl
-pushd /apps/tvb-hip
-wget https://fsl.fmrib.ox.ac.uk/fsldownloads/fslinstaller.py
-# 2to3 -w fslinstaller.py
-echo "" | python2 fslinstaller.py &> fslinstall.log
-tail fslinstall.log
-mv /usr/local/fsl ./
-export FSLDIR=/apps/tvb-hip/fsl
-source ${FSLDIR}/etc/fslconf/fsl.sh
-export PATH=$FSLDIR/bin:$PATH
+# pushd /apps/tvb-hip
+# wget https://fsl.fmrib.ox.ac.uk/fsldownloads/fslinstaller.py
+# # 2to3 -w fslinstaller.py
+# echo "" | python2 fslinstaller.py &> fslinstall.log
+# tail fslinstall.log
+# mv /usr/local/fsl ./
+# export FSLDIR=/apps/tvb-hip/fsl
+# source ${FSLDIR}/etc/fslconf/fsl.sh
+# export PATH=$FSLDIR/bin:$PATH
 
 # finally freesurfer
-pushd /apps/tvb-hip
-wget https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/7.2.0/freesurfer-linux-ubuntu18_amd64-7.2.0.tar.gz
-tar xzf freesurfer-linux-ubuntu18_amd64-7.2.0.tar.gz
+# pushd /apps/tvb-hip
+# wget https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/7.2.0/freesurfer-linux-ubuntu18_amd64-7.2.0.tar.gz
+# tar xzf freesurfer-linux-ubuntu18_amd64-7.2.0.tar.gz
 
-export FREESURFER_HOME=$PWD/freesurfer
-source freesurfer/SetUpFreeSurfer.sh
+# export FREESURFER_HOME=$PWD/freesurfer
+# source freesurfer/SetUpFreeSurfer.sh
 
 popd
 
