@@ -19,7 +19,13 @@ ENV PATH=/apps/tvb-hip/jlab_server/bin:$PATH
 
 RUN pip install Cython && pip install tvb-gdist
 
-# speculative
-RUN pip install pybids siibra requests pyunicore
+RUN pip install pybids siibra requests pyunicore mne nilearn
+ 
+RUN apt-get install -y datalad bc
 
-# RUN pip install mne frites nilearn etc etc
+RUN ln -s /apps/tvb-hip/fsl /usr/local/fsl
+
+ENV PATH=/apps/tvb-hip/jlab_server/bin:$PATH
+
+# ipywidets, pyvista
+RUN pip install pyvista ipywidgets
