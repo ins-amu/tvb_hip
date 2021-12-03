@@ -24,3 +24,5 @@ ENV MATLABPATH=$bbwDir/scripts/:$MATLABPATH
 
 WORKDIR /apps/tvb-hip/bbwarp
 RUN bash scripts/downloads.sh
+
+WORKDIR /work
