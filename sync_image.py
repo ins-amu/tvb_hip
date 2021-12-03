@@ -1,3 +1,4 @@
+import os
 import argparse
 import requests
 import time
@@ -11,6 +12,6 @@ def upload(tok, fname):
         resp = requests.put(ul_url, data=fd.read())
     print(resp.text)
 
-resp = requests.post(api + 'auth/token', json={'username': 'woodman', 'password': "oawGQe!N4!%Rwnc*"})
+resp = requests.post(api + 'auth/token', json={'username': 'woodman', 'password': "foobar"})
 tok = resp.json()
 upload(tok, 'Dockerfile')
