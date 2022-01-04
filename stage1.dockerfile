@@ -29,3 +29,5 @@ ENV PATH=/apps/tvb-hip/jlab_server/bin:$PATH
 
 # ipywidets, pyvista
 RUN pip install pyvista ipywidgets
+
+RUN conda install -c mrtrix3 mrtrix3
