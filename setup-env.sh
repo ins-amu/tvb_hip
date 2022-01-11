@@ -1,4 +1,3 @@
-
 export PATH=/apps/tvb-hip/jlab_server/bin:$PATH
 
 export FSLDIR=/apps/tvb-hip/fsl

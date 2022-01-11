@@ -18,5 +18,8 @@ RUN bash build-jlab.sh
 
 ADD setup-env.sh ./
 ADD entrypoint.sh ./
+ADD start-jlab.sh ./
+ADD start.sh ./
 
 ENTRYPOINT ["/apps/tvb-hip/entrypoint.sh"]
+CMD ["/apps/tvb-hip/start-jlab.sh"]
