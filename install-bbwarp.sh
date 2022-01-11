@@ -1,7 +1,5 @@
 FROM hip:stage2
 
-RUN apt-get install -y bc
-
 # prereq bbwarp is mnic & workbench
 WORKDIR /apps/tvb-hip
 RUN curl -L http://packages.bic.mni.mcgill.ca/minc-toolkit/Debian/minc-toolkit-1.9.18-20200813-Ubuntu_20.04-x86_64.deb > minc.deb
