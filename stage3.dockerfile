@@ -1,4 +1,4 @@
-FROM hip:stage1
+FROM hip:stage2
 
 RUN apt-get install -y bc
 
