@@ -1,0 +1,3 @@
+[submodule "tvb-pipeline"]
+	path = tvb-pipeline
+	url = https://github.com/ins-amu/tvb-pipeline

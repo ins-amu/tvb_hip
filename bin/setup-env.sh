@@ -15,3 +15,6 @@ source $FREESURFER_HOME/SetUpFreeSurfer.sh
 
 # or minc may not work?
 ln -s /apps/tvb-hip/minc /opt/minc/1.9.18 &> /dev/null || true
+
+# or cmdstanpy will not work
+ln -s /apps/tvb-hip/cmdstan $HOME/.cmdstan &> /dev/null || true
