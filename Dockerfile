@@ -14,3 +14,9 @@ RUN bash install-fsl.sh
 
 ADD build-jlab.sh ./
 RUN bash build-jlab.sh
+
+
+ADD setup-env.sh ./
+ADD entrypoint.sh ./
+
+ENTRYPOINT ["/apps/tvb-hip/entrypoint.sh"]
