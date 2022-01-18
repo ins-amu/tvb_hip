@@ -1,3 +1,16 @@
+functions {
+  vector ode_rhs(real time, vector xz, matrix SC, real I1, real tau0, real K, vector eta) {
+    int nn = rows(xz)/2;
+    vector[nn] x = xz[1:nn];
+    vector[nn] z = xz[nn+1:2*nn];
+    vector[nn] gx = SC * x;
+    // print(nn, " ", rows(x), " ", rows(z), " ", rows(eta), " ", rows(gx));
+    vector[nn] dx = 1.0 - x.*x.*x - 2.0*x.*x - z + I1;
+    vector[nn] dz = (1/tau0)*(4*(x - eta) - z - K*gx);
+    return append_row(dx, dz);
+  }
+}
+
 data {
   int nn;  //number of brain regions
   int nt;  //number of data points per sensor
@@ -20,14 +33,17 @@ data {
   real eta_spread;
   real eta_offset; 
  
-  // real zlim[2]; 
-  // real xlim[2]; 
-
+  // ode solving
+  int ode_solver;
+  real ode_rtol;
+  real ode_atol;
+  int ode_maxstep;
 }
 
 transformed data {
   vector[nt*ns] Obs_seeg_vect;
   Obs_seeg_vect=to_vector(Obs_seeg);
+  vector[2*nn] ode_atol_fwd = rep_vector(ode_atol, 2*nn);
 }
 
 parameters {
@@ -79,19 +95,77 @@ model {
   eps_star ~ normal(0.,1.);
 
   
-  /* integrate & predict */
   x[,1] = x_init;
   z[,1] = z_init;
-
-  for (t in 1:(nt - 1)) {
-    // modified SC
-    gx = SC * x[,t];
-    dx = 1.0 - x[,t].*x[,t].*x[,t] - 2.0*x[,t].*x[,t] - z[,t] + I1;
-    dz = (1/tau0)*(4*(x[,t] - eta) - z[,t] - K*gx);
-    x[,t+1] = x[,t] + dt*dx ; 
-    z[,t+1] = z[,t] + dt*dz ; 
-  }
+  if (ode_solver == 0) {
+    // this is Euler. 75% of the grad eval time
+    for (t in 1:(nt - 1)) {
+      gx = SC * x[,t];
+      dx = 1.0 - x[,t].*x[,t].*x[,t] - 2.0*x[,t].*x[,t] - z[,t] + I1;
+      dz = (1/tau0)*(4*(x[,t] - eta) - z[,t] - K*gx);
+      x[,t+1] = x[,t] + dt*dx ; 
+      z[,t+1] = z[,t] + dt*dz ; 
+    }
+  } else if (ode_solver == 1) {
+    // this is Heun
+    for (t in 1:(nt - 1)) {
+      gx = SC * x[,t];
+      dx = 1.0 - x[,t].*x[,t].*x[,t] - 2.0*x[,t].*x[,t] - z[,t] + I1;
+      dz = (1/tau0)*(4*(x[,t] - eta) - z[,t] - K*gx);
+      vector[nn] xi = x[,t] + dt*dx;
+      vector[nn] zi = z[,t] + dt*dz;
+      vector[nn] gxi = SC * xi;
+      vector[nn] dxi = 1.0 - xi.*xi.*xi - 2.0*xi.*xi - zi + I1;
+      vector[nn] dzi = (1/tau0)*(4*(xi - eta) - zi - K*gxi);
+      x[,t+1] = x[,t] + dt/2*(dx + dxi); 
+      z[,t+1] = z[,t] + dt/2*(dz + dzi); 
+    }
+  } else if (ode_solver == 4) {
+    // this is RK4
+    for (t in 1:(nt - 1)) {
+      // k1 = f(y)
+      dx = 1.0 - x[,t].*x[,t].*x[,t] - 2.0*x[,t].*x[,t] - z[,t] + I1;
+      dz = (1/tau0)*(4*(x[,t] - eta) - z[,t] - K*SC*x[,t]);
+      // k2 = f(y + dt*k1/2)
+      vector[nn] xi = x[,t] + dt*dx/2;
+      vector[nn] zi = z[,t] + dt*dz/2;
+      vector[nn] dxi = 1.0 - xi.*xi.*xi - 2.0*xi.*xi - zi + I1;
+      vector[nn] dzi = (1/tau0)*(4*(xi - eta) - zi - K*SC*xi);
+      // k3 = f(y + dt*k2/2)
+      vector[nn] xii = x[,t] + dt*dxi/2;
+      vector[nn] zii = z[,t] + dt*dzi/2;
+      vector[nn] dxii = 1.0 - xii.*xii.*xii - 2.0*xii.*xii - zii + I1;
+      vector[nn] dzii = (1/tau0)*(4*(xii - eta) - zii - K*SC*xii);
+      // k4 = f(y + dt*k3)
+      vector[nn] xiii = x[,t] + dt*dxii;
+      vector[nn] ziii = z[,t] + dt*dzii;
+      vector[nn] dxiii = 1.0 - xiii.*xiii.*xiii - 2.0*xiii.*xiii - ziii + I1;
+      vector[nn] dziii = (1/tau0)*(4*(xiii - eta) - ziii - K*SC*xiii);
+      x[,t+1] = x[,t] + dt/6*(dx + dxi*2 + dxii*2 + dxiii); 
+      z[,t+1] = z[,t] + dt/6*(dz + dzi*2 + dzii*2 + dziii); 
+    }
+  } else if (ode_solver == 2) {
     
+    vector[2*nn] ic = append_row(x_init, z_init);
+    real it = 0.0;
+    real ts[nt-1];
+    for (t in 2:nt) ts[t-1] = t*dt;
+    vector[2*nn] ode_sol[nt-1] = ode_ckrk_tol(
+      ode_rhs, ic, it, ts, ode_rtol, ode_atol, ode_maxstep,
+      SC, I1, tau0, K, eta);
+    for (t in 2:nt) x[,t] = ode_sol[t-1][1:nn];
+  } else if (ode_solver == 3) {
+    vector[2*nn] ic = append_row(x_init, z_init);
+    real it = 0.0;
+    real ts[nt-1];
+    for (t in 2:nt) ts[t-1] = t*dt;
+    vector[2*nn] ode_sol[nt-1] = ode_adjoint_tol_ctl(
+      ode_rhs, ic, it, ts, ode_rtol, ode_atol_fwd, ode_rtol, ode_atol_fwd,
+      ode_rtol, ode_atol, ode_maxstep, 100, 1, 1, 1,
+      SC, I1, tau0, K, eta);
+    for (t in 2:nt) x[,t] = ode_sol[t-1][1:nn];
+  }
+  
   for(i in 1:nt){
     Seeg[i,]=to_row_vector(amplitude*(Gr*x[,i])+offset);
   }
