@@ -23,6 +23,14 @@ entry mk_bvep_parm [ns] [nn] (eta:[nn]f32) (eps:f32) (x_init:[nn]f32) (z_init:[n
   : bvep_parm [ns][nn] = 
   {eta=eta, eps=eps, x_init=x_init, z_init=z_init, amp=amp, off=off, K=K}
 
+entry bvep_parm_get_eta [ns][nn] (p:bvep_parm[ns][nn]): [nn]f32 = p.eta
+entry bvep_parm_get_eps [ns][nn] (p:bvep_parm[ns][nn]): f32 = p.eps
+entry bvep_parm_get_x_init [ns][nn] (p:bvep_parm[ns][nn]): [nn]f32 = p.x_init
+entry bvep_parm_get_z_init [ns][nn] (p:bvep_parm[ns][nn]): [nn]f32 = p.z_init
+entry bvep_parm_get_amp [ns][nn] (p:bvep_parm[ns][nn]):  f32 = p.amp
+entry bvep_parm_get_off [ns][nn] (p:bvep_parm[ns][nn]): [ns]f32 = p.off
+entry bvep_parm_get_K [ns][nn] (p:bvep_parm[ns][nn]): f32 = p.K
+
 entry dfun [nn] (I1:f32) (tau0:f32) (K:f32) (SC:[nn][nn]f32) (x:[nn]f32) (z:[nn]f32) (eta:[nn]f32): ([nn]f32,[nn]f32) =
   let gx = map (\sc -> map2 (*) sc x |> reduce (+) 0f32) SC
   let dx = map2 (\x z -> 1f32 - x*x*x - 2*x*x - z + I1) x z
@@ -84,4 +92,3 @@ entry bvep_loss [nt][ns][nn] (data:bvep_data[nt][ns][nn]) (parm:bvep_parm[ns][nn
 entry bvep_grad_loss [nt][ns][nn] (data:bvep_data[nt][ns][nn]) (parm:bvep_parm[ns][nn]): bvep_parm[ns][nn] =
   vjp (bvep_loss data) parm 1f32
 
--- then a bunch of packing / unpacking stuff

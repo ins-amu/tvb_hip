@@ -1,5 +1,8 @@
 export PATH=/apps/tvb-hip/jlab_server/bin:$PATH
 
+# allows pipeline to find some relevant mrtrix3-shipped files
+export MRT3=/apps/tvb-hip/jlab_server
+
 export FSLDIR=/apps/tvb-hip/fsl
 source ${FSLDIR}/etc/fslconf/fsl.sh
 export PATH=$FSLDIR/bin:$PATH

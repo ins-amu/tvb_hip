@@ -15,6 +15,10 @@ RUN bash install-fsl.sh
 ADD build-jlab.sh ./
 RUN bash build-jlab.sh
 
+RUN cd $HOME \
+ && apt-get install -y vim cmake \
+ && git clone https://github.com/maedoc/.vim \
+ && vim -c PlugInstall -c qa
 
 ADD setup-env.sh ./
 ADD entrypoint.sh ./
