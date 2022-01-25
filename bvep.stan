@@ -1,5 +1,6 @@
 functions {
-  // int bvep_setup_data(matrix sEEG, matrix SC, matrix gain, real dt, real tau0, real I1);
+  int bvep_setup();
+  int bvep_data_setup(matrix sEEG, matrix SC, matrix gain, real dt, real tau0, real I1);
 
   // real bvep_loss(vector eta, real eps, vector x_init, vector z_init, real amp, vector off, real K);
 
@@ -17,26 +18,26 @@ functions {
 #define ode_rhs_(x) ode_rhs(time, x, SC, I1, tau0, K, eta)
 
   vector ode_euler_step(real dt, real time, vector xz, matrix SC, real I1, real tau0, real K, vector eta) {
-    vector dxz = ode_rhs_(xz);
+    vector[rows(xz)] dxz = ode_rhs_(xz);
     return xz + dt * dxz;
   }
 
   vector ode_heun_step(real dt, real time, vector xz, matrix SC, real I1, real tau0, real K, vector eta) {
-    vector d1 = ode_rhs_(xz);
-    vector d2 = ode_rhs_(xz + dt*d1);
+    vector[rows(xz)] d1 = ode_rhs_(xz);
+    vector[rows(xz)] d2 = ode_rhs_(xz + dt*d1);
     return xz + dt / 2 * (d1 + d2);
   }
 
   vector ode_rk4_step(real dt, real time, vector xz, matrix SC, real I1, real tau0, real K, vector eta) {
-    vector d1 = ode_rhs_(xz);
-    vector d2 = ode_rhs_(xz + dt*d1/2);
-    vector d3 = ode_rhs_(xz + dt*d2/2);
-    vector d4 = ode_rhs_(xz + dt*d3);
+    vector[rows(xz)] d1 = ode_rhs_(xz);
+    vector[rows(xz)] d2 = ode_rhs_(xz + dt*d1/2);
+    vector[rows(xz)] d3 = ode_rhs_(xz + dt*d2/2);
+    vector[rows(xz)] d4 = ode_rhs_(xz + dt*d3);
     return xz + dt / 6 * (d1 + (d2 + d3)*2 + d4);
   }
 
 #define make_solve(name) \
-matrix ode_ ## name ## _solve(real dt, real nt, vector xz, matrix SC, real I1, real tau0, real K, vector eta) { \
+matrix ode_ ## name ## _solve(real dt, int nt, vector xz, matrix SC, real I1, real tau0, real K, vector eta) { \
     matrix[rows(xz),nt] sol; \
     sol[,1] = xz; \
     for (t in 1:(nt - 1)) { \
@@ -136,13 +137,13 @@ model {
 
   if (ode_solve_order == 1) {
     matrix[2*nn,nt] sol = ode_euler_solve(dt, nt, append_row(x_init, z_init), SC, I1, tau0, K, eta);
-    x = sol[1:nn,]
+    x = sol[1:nn,];
   } else if (ode_solve_order == 2) {
     matrix[2*nn,nt] sol = ode_heun_solve(dt, nt, append_row(x_init, z_init), SC, I1, tau0, K, eta);
-    x = sol[1:nn,]
+    x = sol[1:nn,];
   } else if (ode_solve_order == 4) {
     matrix[2*nn,nt] sol = ode_rk4_solve(dt, nt, append_row(x_init, z_init), SC, I1, tau0, K, eta);
-    x = sol[1:nn,]
+    x = sol[1:nn,];
   }  
 
   for(i in 1:nt){
@@ -166,16 +167,16 @@ generated quantities {
 
   if (ode_solve_order == 1) {
     matrix[2*nn,nt] sol = ode_euler_solve(dt, nt, append_row(x_init, z_init), SC, I1, tau0, K, eta);
-    x = sol[1:nn,]
-    z = sol[nn+1:,]
+    x = sol[1:nn,];
+    z = sol[nn+1:,];
   } else if (ode_solve_order == 2) {
     matrix[2*nn,nt] sol = ode_heun_solve(dt, nt, append_row(x_init, z_init), SC, I1, tau0, K, eta);
-    x = sol[1:nn,]
-    z = sol[nn+1:,]
+    x = sol[1:nn,];
+    z = sol[nn+1:,];
   } else if (ode_solve_order == 4) {
     matrix[2*nn,nt] sol = ode_rk4_solve(dt, nt, append_row(x_init, z_init), SC, I1, tau0, K, eta);
-    x = sol[1:nn,]
-    z = sol[nn+1:,]
+    x = sol[1:nn,];
+    z = sol[nn+1:,];
   }  
 
   for(i in 1:nt){
