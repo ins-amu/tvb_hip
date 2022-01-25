@@ -1,4 +1,5 @@
-#include <Eigen/Eigen>
+//#include <Eigen/Eigen>
+/*
 #include "bvep.h"
 
 static bool bvep_fut_setup = false;
@@ -19,8 +20,8 @@ bvep_setup(std::ostream* pstream__)
 }
 
 int
-bvep_data_setup(const Eigen::MatrixXd& sEEG_arg__, const Eigen::MatrixXd& SC_arg__,
-                const Eigen::MatrixXd& gain_arg__, const double& dt, const double& tau0,
+bvep_data_setup(const Eigen::MatrixXd& sEEG, const Eigen::MatrixXd& SC,
+                const Eigen::MatrixXd& gain, const double& dt, const double& tau0,
                 const double& I1, std::ostream* pstream__)
 {
 	if (bvep_data_setup_done) return 0;
@@ -30,3 +31,4 @@ bvep_data_setup(const Eigen::MatrixXd& sEEG_arg__, const Eigen::MatrixXd& SC_arg
 	printf("mk_bvep_data returned %d\n", ret);
 	return 1;
 }
+*/
