@@ -1,8 +1,6 @@
 functions {
-  int bvep_setup();
   int bvep_data_setup(matrix sEEG, matrix SC, matrix gain, real dt, real tau0, real I1);
-
-  // real bvep_loss(vector eta, real eps, vector x_init, vector z_init, real amp, vector off, real K);
+  real bvep_loss(vector eta, real eps, vector x_init, vector z_init, real amp, vector off, real K);
 
   vector ode_rhs(real time, vector xz, matrix SC, real I1, real tau0, real K, vector eta) {
     int nn = rows(xz)/2;
@@ -85,6 +83,8 @@ transformed data {
   vector[nt*ns] Obs_seeg_vect;
   Obs_seeg_vect=to_vector(Obs_seeg);
   vector[2*nn] ode_atol_fwd = rep_vector(ode_atol, 2*nn);
+  int success = bvep_data_setup(Obs_seeg, SC, Gr, dt, tau0, I1);
+  print("bvep_data_setup said ", success);
 }
 
 parameters {
@@ -165,6 +165,8 @@ generated quantities {
   vector[nt*ns] log_lik;
   vector[nt] log_lik_sum = rep_vector(0,nt);  
 
+  real loss = bvep_loss(eta, eps, x_init, z_init, amplitude, offset, K);
+
   if (ode_solve_order == 1) {
     matrix[2*nn,nt] sol = ode_euler_solve(dt, nt, append_row(x_init, z_init), SC, I1, tau0, K, eta);
     x = sol[1:nn,];
@@ -173,7 +175,7 @@ generated quantities {
     matrix[2*nn,nt] sol = ode_heun_solve(dt, nt, append_row(x_init, z_init), SC, I1, tau0, K, eta);
     x = sol[1:nn,];
     z = sol[nn+1:,];
-  } else if (ode_solve_order == 4) {
+  } else if (ode_solve_order == 4 || ode_solve_order == 40) {
     matrix[2*nn,nt] sol = ode_rk4_solve(dt, nt, append_row(x_init, z_init), SC, I1, tau0, K, eta);
     x = sol[1:nn,];
     z = sol[nn+1:,];
@@ -184,6 +186,9 @@ generated quantities {
   }
   
   Seeg_qqc_vect=to_vector(Seeg_qqc);
+
+  real loss_true = normal_lpdf(Obs_seeg_vect | Seeg_qqc_vect, eps);
+  real fut_loss_err = square(loss - loss_true);
 
   for (i in 1:(nt*ns)){
         Seeg_ppc[i] = normal_rng(Seeg_qqc_vect[i], eps);
