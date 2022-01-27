@@ -146,12 +146,15 @@ model {
     x = sol[1:nn,];
   }  
 
-  for(i in 1:nt){
-    Seeg[i,]=to_row_vector(amplitude*(Gr*x[,i])+offset);
+  if (ode_solve_order < 10) {
+    for(i in 1:nt){
+      Seeg[i,]=to_row_vector(amplitude*(Gr*x[,i])+offset);
+    }
+    Seeg_vect=to_vector(Seeg);
+    target += normal_lpdf(Obs_seeg_vect | Seeg_vect, eps);
+  } else {
+    target += bvep_loss(eta, eps, x_init, z_init, amplitude, offset, K);
   }
-  
-  Seeg_vect=to_vector(Seeg);
-  target += normal_lpdf(Obs_seeg_vect | Seeg_vect, eps);
 }  
 
 generated quantities {

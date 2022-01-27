@@ -1,5 +1,6 @@
 
 bvep_: bvep_.stan use_bvep.hpp bvep.o
+	rm bvep_ || true
 	CXXFLAGS=-g STANCFLAGS='--allow-undefined' USER_HEADER=$$PWD/use_bvep.hpp LDLIBS_OS=$$PWD/bvep.o make -C ~/.cmdstan/cmdstan-2.28.2/ $$PWD/bvep_
 
 bvep_.stan: bvep.stan
