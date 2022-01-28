@@ -121,10 +121,31 @@ def ode_heun_step_x(g_nx, x, e, k):
     return g_x
 
 @vjp
-def ode_heun_step_e(g, x, e, k): return ode_rhs_eta.f(g*dt, x, e, k)
+def ode_heun_step_e(g, x, e, k):
+    d1 = ode_rhs(x, e, k)
+    # nx = x + dt/2*(d1 + d2)
+    g_d1 = g*dt/2
+    g_d2 = g*dt/2
+    # d2 = ode_rhs(x + dt*d1, e, k)
+    g_d2_f = ode_rhs_eta.f(g_d2, x + dt*d1, e, k)
+    g_d1 += ode_rhs_xz.f(g_d2, x + dt*d1, e, k)*dt
+    # d1 = ode_rhs(x, e, k)
+    g_d1_f = ode_rhs_eta.f(g_d1, x, e, k)
+    return g_d2_f + g_d1_f
 
 @vjp
-def ode_heun_step_k(g, x, e, k): return ode_rhs_K.f(g*dt, x, e, k)
+def ode_heun_step_k(g, x, e, k):
+    # TODO this is identical to _e 
+    d1 = ode_rhs(x, e, k)
+    # nx = x + dt/2*(d1 + d2)
+    g_d1 = g*dt/2
+    g_d2 = g*dt/2
+    # d2 = ode_rhs(x + dt*d1, e, k)
+    g_d2_f = ode_rhs_K.f(g_d2, x + dt*d1, e, k)
+    g_d1 += ode_rhs_xz.f(g_d2, x + dt*d1, e, k)*dt
+    # d1 = ode_rhs(x, e, k)
+    g_d1_f = ode_rhs_K.f(g_d1, x, e, k)
+    return g_d2_f + g_d1_f
 
 defvjp(ode_heun_step, ode_heun_step_x, ode_heun_step_e, ode_heun_step_k)
 
@@ -148,28 +169,26 @@ def ode_rk4_step_x(g, x, e, k):
     d2 = f(x + dt*d1/2)
     d3 = f(x + dt*d2/2)
     # nx = xz + dt/6*(d1 + (d2 + d3)*2 + d4)
-    g_nx_x = g
-    g_nx_d1 = g*dt/6
-    g_nx_d2 = g*dt/3
-    g_nx_d3 = g*dt/3
-    g_nx_d4 = g*dt/6
+    g_x = g*1
+    g_d1 = g*dt/6
+    g_d2 = g*dt/3
+    g_d3 = g*dt/3
+    g_d4 = g*dt/6
     # d4 = f(x + dt*d3)
-    g_d4 = ode_rhs_xz.f(g_nx_d4, x + dt*d3, e, k)
-    g_d4_x = g_d4
-    g_d4_d3 = g_d4*dt
+    g_d4_f = ode_rhs_xz.f(g_d4, x + dt*d3, e, k)
+    g_x += g_d4_f
+    g_d3 += g_d4_f*dt
     # d3 = f(x + dt*d2/2)
-    g_d3 = ode_rhs_xz.f(g_d4_d3, x + dt*d3/2, e, k)
-    g_d3_x = g_d3
-    g_d3_d2 = g_d3*dt/2
+    g_d3_f = ode_rhs_xz.f(g_d3, x + dt*d3/2, e, k)
+    g_x += g_d3_f
+    g_d2 += g_d3*dt/2
     # d2 = f(x + dt*d1/2)
-    g_d2 = ode_rhs_xz.f(g_d3_d2, x + dt*d1/2, e, k)
-    g_d2_x = g_d2
-    g_d2_d1 = g_d2*dt/2
+    g_d2_f = ode_rhs_xz.f(g_d2, x + dt*d1/2, e, k)
+    g_x += g_d2_f
+    g_d1 += g_d2_f*dt/2
     # d1 = f(x)
-    g_d1 = ode_rhs_xz.f(g_d2_d1, x, e, k)
-    g_d1_x = g_d1
-    # total
-    g_x = g_nx_x + g_d1_x + g_d2_x + g_d3_x + g_d4_x
+    g_d1_f = ode_rhs_xz.f(g_d1, x, e, k)
+    g_x += g_d1_f
     return g_x
 
 @vjp
