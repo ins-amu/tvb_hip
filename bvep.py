@@ -174,21 +174,26 @@ def ode_rk4_step_x(g, x, e, k):
     g_d2 = g*dt/3
     g_d3 = g*dt/3
     g_d4 = g*dt/6
+
     # d4 = f(x + dt*d3)
     g_d4_f = ode_rhs_xz.f(g_d4, x + dt*d3, e, k)
     g_x += g_d4_f
     g_d3 += g_d4_f*dt
+
     # d3 = f(x + dt*d2/2)
-    g_d3_f = ode_rhs_xz.f(g_d3, x + dt*d3/2, e, k)
+    g_d3_f = ode_rhs_xz.f(g_d3, x + dt*d2/2, e, k)
     g_x += g_d3_f
-    g_d2 += g_d3*dt/2
+    g_d2 += g_d3_f*dt/2
+
     # d2 = f(x + dt*d1/2)
     g_d2_f = ode_rhs_xz.f(g_d2, x + dt*d1/2, e, k)
     g_x += g_d2_f
     g_d1 += g_d2_f*dt/2
+
     # d1 = f(x)
     g_d1_f = ode_rhs_xz.f(g_d1, x, e, k)
     g_x += g_d1_f
+
     return g_x
 
 @vjp
