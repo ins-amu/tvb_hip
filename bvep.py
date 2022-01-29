@@ -1,4 +1,6 @@
 import timeit
+import numpy as onp
+import numba as nb
 from functools import partial
 from autograd import grad, numpy as np
 from autograd.extend import primitive, defvjp
@@ -18,6 +20,24 @@ def ode_rhs(xz, eta, K):#, SC, I1, tau0):
     dz = (1/tau0)*(4*(x - eta) - z - K*gx)
     return np.concatenate([dx, dz])
 
+@nb.njit(inline='always', fastmath=True)
+def ode_rhs_jit(xz, eta, K, SC, I1, rtau0):
+    nn = xz.size // 2
+    dxz = onp.zeros_like(xz)
+    for i in range(nn):
+        gx = 0.0
+        for j in range(nn):
+            gx += SC[i,j]*xz[j]
+        x = xz[i]
+        z = xz[i+nn]
+        dxz[i] = 1.0 - x*x*x - 2*x*x - z + I1
+        dxz[i+nn] = rtau0*(4.0*(x - eta[i]) - z - K*gx)
+    return dxz
+
+def ode_rhs(xz, eta, K):
+    return ode_rhs_jit(xz, eta, K, SC, I1, 1/tau0)
+ode_rhs.jit = ode_rhs_jit
+
 if custom_grads:
     ode_rhs = primitive(ode_rhs)
 
@@ -33,6 +53,29 @@ if custom_grads:
         x, _ = xz[:nn], xz[nn:]
         _, g_dz = g[:nn], g[nn:]
         return g_dz * (-4/tau0)
+
+    # set up jit version
+    @nb.njit(inline='always', fastmath=True)
+    def ode_rhs_eta_jit(g_eta, g, xz, eta, K, rtau0):
+        nn = xz.shape[0] // 2
+        # g_eta = onp.ones(nn)
+        for i in range(nn):
+            g_eta[i] = -g[i+nn] * rtau0 * 4 
+
+    # TODO boilerplate
+    ode_rhs_eta_np = ode_rhs_eta
+    @vjp
+    def ode_rhs_eta(g, xz, eta, K):
+        val = lambda x : x._value if hasattr(x, '_value') else x
+        if hasattr(g, '_value'):
+            ret = ode_rhs_eta_np.f(g, xz, eta, K)
+            ode_rhs_eta_jit(ret._value, g._value, val(xz), val(eta), val(K), 1/tau0)
+            return ret
+        else:
+            ret = g[:xz.size//2]*0
+            ode_rhs_eta_jit(ret, g, xz, eta, K, 1/tau0)
+            return ret
+    ode_rhs_eta.jit = ode_rhs_eta_jit
 
     @vjp
     def ode_rhs_xz(g, xz, eta, K):
@@ -54,6 +97,42 @@ if custom_grads:
         g_z = g_dx_z + g_dz_z
         return np.concatenate([g_x, g_z])
 
+    # set up jit version
+    @nb.njit(inline='always', fastmath=True)
+    def ode_rhs_xz_jit(g_xz, g, xz, eta, K, rtau0, SC):
+        # unpack
+        nn = xz.size // 2
+        x, _ = xz[:nn], xz[nn:]
+        g_dx, g_dz = g[:nn], g[nn:]
+        for i in range(nn):
+            # grad wrt x & z via dx
+            g_dx_x = g_dx[i] * (-3*x[i]*x[i] - 4*x[i])
+            g_dx_z = g_dx[i] * (-1)
+            # grad wrt x, z, eta, K via dz
+            acc = 0
+            for j in range(nn):
+                acc += g_dz[j]*SC[j,i]
+            g_dz_x = g_dz[i]*4*rtau0 - K*rtau0*acc # np.dot(g_dz, g_gx_x)
+            g_dz_z = g_dz[i] * (-1/tau0)
+            # cumulative grads for states & params
+            g_xz[i] = g_dx_x + g_dz_x
+            g_xz[i+nn] = g_dx_z + g_dz_z
+
+    # TODO boilerplate
+    ode_rhs_xz_np = ode_rhs_xz
+    @vjp
+    def ode_rhs_xz(g, xz, eta, K):
+        val = lambda x : x._value if hasattr(x, '_value') else x
+        if hasattr(g, '_value'):
+            ret = ode_rhs_xz_np.f(g, xz, eta, K)
+            ode_rhs_xz_jit(ret._value, g._value, val(xz), val(eta), val(K), 1/tau0, SC)
+            return ret
+        else:
+            ret = g*0
+            ode_rhs_xz_jit(ret, g, xz, eta, K, 1/tau0, SC)
+            return ret
+    ode_rhs_xz.jit = ode_rhs_xz_jit
+
     @vjp
     def ode_rhs_K(g, xz, eta, K):
         nn = xz.size // 2
@@ -61,7 +140,34 @@ if custom_grads:
         _, g_dz = g[:nn], g[nn:]
         gx = np.dot(SC, x)
         return -np.sum(g_dz * gx / tau0)
-        
+
+    # set up jit version
+    @nb.njit(inline='always', fastmath=True)
+    def ode_rhs_K_jit(g, xz, eta, K, rtau0, SC):
+        nn = xz.size // 2
+        x, _ = xz[:nn], xz[nn:]
+        _, g_dz = g[:nn], g[nn:]
+        acc = 0
+        for i in range(nn):
+            gx = 0
+            for j in range(nn):
+                gx += SC[i,j]*x[j]
+            acc += g_dz[i]*gx
+        return -acc*rtau0
+    # TODO boilerplate
+    ode_rhs_K_np = ode_rhs_K
+    @vjp
+    def ode_rhs_K(g, xz, eta, K):
+        val = lambda x : x._value if hasattr(x, '_value') else x
+        if hasattr(g, '_value'):
+            ret = ode_rhs_K_np.f(g, xz, eta, K)
+            ret._value = ode_rhs_K_jit(g._value, val(xz), val(eta), val(K), 1/tau0, SC)
+            return ret
+        else:
+            ret = ode_rhs_K_jit(g, xz, eta, K, 1/tau0, SC)
+            return ret
+    ode_rhs_K.jit = ode_rhs_K_jit
+
     defvjp(ode_rhs, ode_rhs_xz, ode_rhs_eta, ode_rhs_K)
 
 nn = SC.shape[0]
@@ -71,9 +177,12 @@ K = 0.2
 
 if custom_grads:
     check_grads(lambda xz: ode_rhs(xz, eta, K), modes=['rev'])(xz)
+    print('rhs xz ok')
     check_grads(lambda eta: ode_rhs(xz, eta, K), modes=['rev'])(eta)
+    print('rhs eta ok')
     check_grads(lambda K: ode_rhs(xz, eta, K), modes=['rev'])(K)
-    print('rhs ok')
+    print('rhs K ok')
+    print('rhs ok w/ jits as well')
 
 def ode_euler_step(xz, eta, K):
     return xz + dt * ode_rhs(xz, eta, K)
@@ -84,11 +193,65 @@ if custom_grads:
     @vjp
     def ode_euler_step_x(g, x, e, k): return g + ode_rhs_xz.f(g*dt,x,e,k)
 
+    # set up jit version
+    @nb.njit(inline='always', fastmath=True)
+    def ode_euler_step_x_jit(g_x, g, x, e, k, rtau0, SC):
+        ode_rhs_xz_jit(g_x, g*dt, x, e, k, rtau0, SC)
+        g_x += g
+    ode_euler_step_x_np = ode_euler_step_x
+    @vjp
+    def ode_euler_step_x(g, x, e, k):
+        val = lambda x : x._value if hasattr(x, '_value') else x
+        if hasattr(g, '_value'):
+            ret = ode_euler_step_x_np.f(g, xz, eta, K)
+            ode_euler_step_x_jit(ret._value, g._value, val(xz), val(eta), val(K), 1/tau0, SC)
+            return ret
+        else:
+            ret = g*0
+            ode_euler_step_x_jit(ret, g, xz, eta, K, 1/tau0, SC)
+            return ret
+    ode_euler_step_x.jit = ode_euler_step_x_jit
+
     @vjp
     def ode_euler_step_e(g, x, e, k): return ode_rhs_eta.f(g*dt, x, e, k)
 
+    # set up jit version
+    @nb.njit(inline='always', fastmath=True)
+    def ode_euler_step_e_jit(g_e, g, x, e, k, rtau0):
+        ode_rhs_eta_jit(g_e, g*dt, x, e, k, rtau0)
+    ode_euler_step_e_np = ode_euler_step_e
+    @vjp
+    def ode_euler_step_e(g, x, e, k):
+        val = lambda x : x._value if hasattr(x, '_value') else x
+        if hasattr(g, '_value'):
+            ret = ode_euler_step_e_np.f(g, xz, eta, K)
+            ode_euler_step_e_jit(ret._value, g._value, val(xz), val(eta), val(K), 1/tau0)
+            return ret
+        else:
+            ret = g[g.size//2:]*0
+            ode_euler_step_e_jit(ret, g, xz, eta, K, 1/tau0)
+            return ret
+    ode_euler_step_e.jit = ode_euler_step_e_jit
+
     @vjp
     def ode_euler_step_k(g, x, e, k): return ode_rhs_K.f(g*dt, x, e, k)
+
+    # set up jit version
+    @nb.njit(inline='always', fastmath=True)
+    def ode_euler_step_k_jit(g, x, e, k, rtau0, SC):
+        return ode_rhs_K_jit(g*dt, x, e, k, rtau0, SC)
+    ode_euler_step_k_np = ode_euler_step_k
+    @vjp
+    def ode_euler_step_k(g, x, e, k):
+        rtau0 = 1/tau0
+        val = lambda x : x._value if hasattr(x, '_value') else x
+        if hasattr(g, '_value'):
+            ret = ode_euler_step_k_np.f(g, xz, eta, K)
+            ret._value = ode_euler_step_k_jit(g._value, val(xz), val(eta), val(K), rtau0, SC)
+            return ret
+        else:
+            return ode_euler_step_k_jit(g, xz, eta, K, rtau0, SC)
+    ode_euler_step_k.jit = ode_euler_step_k_jit
 
     defvjp(ode_euler_step, ode_euler_step_x, ode_euler_step_e, ode_euler_step_k)
 
@@ -129,6 +292,37 @@ if custom_grads:
         g_d1_f = ode_rhs_xz.f(g_d1, x, e, k)
         g_x += g_d1_f
         return g_x
+
+    # set up jit version
+    @nb.njit(inline='always', fastmath=True)
+    def ode_heun_step_x_jit(g_x, g_nx, x, e, k, rtau0, SC, I1):
+        d1 = ode_rhs_jit(x, e, k, SC, I1, rtau0)
+        # nx = x + dt/2*(d1 + d2)
+        g_d1 = g_nx*dt/2
+        g_d2 = g_nx*dt/2
+        g_x[:] = g_nx
+        # d2 = ode_rhs(x + dt*d1, e, k)
+        g_d2_f = onp.zeros_like(g_d2)
+        ode_rhs_xz_jit(g_d2_f, g_d2, x + dt*d1, e, k, rtau0, SC)
+        g_x += g_d2_f
+        g_d1 += g_d2_f*dt
+        # d1 = ode_rhs(x, e, k)
+        g_d1_f = onp.zeros_like(g_d2)
+        ode_rhs_xz_jit(g_d1_f, g_d1, x, e, k, rtau0, SC)
+        g_x += g_d1_f
+    ode_heun_step_x_np = ode_heun_step_x
+    @vjp
+    def ode_heun_step_x(g, x, e, k):
+        val = lambda x : x._value if hasattr(x, '_value') else x
+        if hasattr(g, '_value'):
+            ret = ode_heun_step_x_np.f(g, xz, eta, K)
+            ode_heun_step_x_jit(ret._value, g._value, val(xz), val(eta), val(K), 1/tau0, SC, I1)
+            return ret
+        else:
+            ret = g*0
+            ode_heun_step_x_jit(ret, g, xz, eta, K, 1/tau0, SC, I1)
+            return ret
+    ode_heun_step_x.jit = ode_heun_step_x_jit
 
     @vjp
     def ode_heun_step_e(g, x, e, k):
