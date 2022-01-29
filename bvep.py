@@ -7,8 +7,12 @@ from autograd.extend import primitive, defvjp
 from autograd.scipy.stats.norm import logpdf as normal_lpdf
 from autograd.test_util import check_grads
 
+def jit(f):
+    return nb.njit(inline='always', fastmath=True, boundscheck=False)(f)
+
 npz = np.load('bvep.npz')
 globals().update(npz)
+nn = SC.shape[0]
 
 custom_grads = True
 
@@ -20,7 +24,7 @@ def ode_rhs(xz, eta, K):#, SC, I1, tau0):
     dz = (1/tau0)*(4*(x - eta) - z - K*gx)
     return np.concatenate([dx, dz])
 
-@nb.njit(inline='always', fastmath=True)
+@jit
 def ode_rhs_jit(xz, eta, K, SC, I1, rtau0):
     nn = xz.size // 2
     dxz = onp.zeros_like(xz)
@@ -55,7 +59,7 @@ if custom_grads:
         return g_dz * (-4/tau0)
 
     # set up jit version
-    @nb.njit(inline='always', fastmath=True)
+    @jit
     def ode_rhs_eta_jit(g_eta, g, xz, eta, K, rtau0):
         nn = xz.shape[0] // 2
         # g_eta = onp.ones(nn)
@@ -98,7 +102,7 @@ if custom_grads:
         return np.concatenate([g_x, g_z])
 
     # set up jit version
-    @nb.njit(inline='always', fastmath=True)
+    @jit
     def ode_rhs_xz_jit(g_xz, g, xz, eta, K, rtau0, SC):
         # unpack
         nn = xz.size // 2
@@ -142,7 +146,7 @@ if custom_grads:
         return -np.sum(g_dz * gx / tau0)
 
     # set up jit version
-    @nb.njit(inline='always', fastmath=True)
+    @jit
     def ode_rhs_K_jit(g, xz, eta, K, rtau0, SC):
         nn = xz.size // 2
         x, _ = xz[:nn], xz[nn:]
@@ -194,7 +198,7 @@ if custom_grads:
     def ode_euler_step_x(g, x, e, k): return g + ode_rhs_xz.f(g*dt,x,e,k)
 
     # set up jit version
-    @nb.njit(inline='always', fastmath=True)
+    @jit
     def ode_euler_step_x_jit(g_x, g, x, e, k, rtau0, SC):
         ode_rhs_xz_jit(g_x, g*dt, x, e, k, rtau0, SC)
         g_x += g
@@ -216,7 +220,7 @@ if custom_grads:
     def ode_euler_step_e(g, x, e, k): return ode_rhs_eta.f(g*dt, x, e, k)
 
     # set up jit version
-    @nb.njit(inline='always', fastmath=True)
+    @jit
     def ode_euler_step_e_jit(g_e, g, x, e, k, rtau0):
         ode_rhs_eta_jit(g_e, g*dt, x, e, k, rtau0)
     ode_euler_step_e_np = ode_euler_step_e
@@ -237,7 +241,7 @@ if custom_grads:
     def ode_euler_step_k(g, x, e, k): return ode_rhs_K.f(g*dt, x, e, k)
 
     # set up jit version
-    @nb.njit(inline='always', fastmath=True)
+    @jit
     def ode_euler_step_k_jit(g, x, e, k, rtau0, SC):
         return ode_rhs_K_jit(g*dt, x, e, k, rtau0, SC)
     ode_euler_step_k_np = ode_euler_step_k
@@ -274,6 +278,18 @@ def ode_heun_step(x, e, k):
     # nx = x + dt*d2
     return nx
 
+
+@jit
+def ode_heun_step_jit(x, e, k, SC, I1, rtau0):
+    d1 = ode_rhs_jit(x, e, k, SC, I1, rtau0)
+    d2 = ode_rhs_jit(x + dt*d1, e, k, SC, I1, rtau0)
+    nx = x + dt/2*(d1 + d2)
+    return nx
+ode_heun_step_np = ode_heun_step
+
+def ode_heun_step(x, e, k):
+    return ode_heun_step_jit(x, e, k, SC, I1, 1/tau0)
+
 if custom_grads:
     ode_heun_step = primitive(ode_heun_step)
 
@@ -294,8 +310,9 @@ if custom_grads:
         return g_x
 
     # set up jit version
-    @nb.njit(inline='always', fastmath=True)
+    @jit
     def ode_heun_step_x_jit(g_x, g_nx, x, e, k, rtau0, SC, I1):
+        # TODO use loops, avoid temp arrays, maybe scalar version of ode_rhs_xz_jit
         d1 = ode_rhs_jit(x, e, k, SC, I1, rtau0)
         # nx = x + dt/2*(d1 + d2)
         g_d1 = g_nx*dt/2
@@ -337,6 +354,37 @@ if custom_grads:
         g_d1_f = ode_rhs_eta.f(g_d1, x, e, k)
         return g_d2_f + g_d1_f
 
+    # set up jit version
+    @jit
+    def ode_heun_step_e_jit(g_x, g_nx, x, e, k, rtau0, SC, I1):
+        # TODO use loops, avoid temp arrays, maybe scalar version of ode_rhs_xz_jit
+        d1 = ode_rhs_jit(x, e, k, SC, I1, rtau0)
+        # nx = x + dt/2*(d1 + d2)
+        g_d1 = g_nx*dt/2
+        g_d2 = g_nx*dt/2
+        # d2 = ode_rhs(x + dt*d1, e, k)
+        ode_rhs_eta_jit(g_x, g_d2, x + dt*d1, e, k, rtau0)
+        tmp = g_d2*0
+        ode_rhs_xz_jit(tmp, g_d2, x + dt*d1, e, k, rtau0, SC)
+        g_d1 += tmp*dt
+        # d1 = ode_rhs(x, e, k)
+        tmp = g_d1*0
+        ode_rhs_eta_jit(tmp, g_d1, x, e, k, rtau0)
+        g_x += tmp
+    ode_heun_step_e_np = ode_heun_step_e
+    @vjp
+    def ode_heun_step_e(g, x, e, k):
+        val = lambda x : x._value if hasattr(x, '_value') else x
+        if hasattr(g, '_value'):
+            ret = ode_heun_step_e_np.f(g, xz, eta, K)
+            ode_heun_step_e_jit(ret._value, g._value, val(xz), val(eta), val(K), 1/tau0, SC, I1)
+            return ret
+        else:
+            ret = g[g.size//2:]*0
+            ode_heun_step_e_jit(ret, g, xz, eta, K, 1/tau0, SC, I1)
+            return ret
+    ode_heun_step_e.jit = ode_heun_step_e_jit
+
     @vjp
     def ode_heun_step_k(g, x, e, k):
         # TODO this is identical to _e 
@@ -350,6 +398,35 @@ if custom_grads:
         # d1 = ode_rhs(x, e, k)
         g_d1_f = ode_rhs_K.f(g_d1, x, e, k)
         return g_d2_f + g_d1_f
+
+    # set up jit version
+    @jit
+    def ode_heun_step_k_jit(g_nx, x, e, k, rtau0, SC, I1):
+        # TODO use loops, avoid temp arrays, maybe scalar version of ode_rhs_xz_jit
+        d1 = ode_rhs_jit(x, e, k, SC, I1, rtau0)
+        # nx = x + dt/2*(d1 + d2)
+        g_d1 = g_nx*dt/2
+        g_d2 = g_nx*dt/2
+        # d2 = ode_rhs(x + dt*d1, e, k)
+        g_k = ode_rhs_K_jit(g_d2, x + dt*d1, e, k, rtau0, SC)
+        tmp = g_d2*0
+        ode_rhs_xz_jit(tmp, g_d2, x + dt*d1, e, k, rtau0, SC)
+        g_d1 += tmp*dt
+        # d1 = ode_rhs(x, e, k)
+        g_k += ode_rhs_K_jit(g_d1, x, e, k, rtau0, SC)
+        return g_k
+    ode_heun_step_k_np = ode_heun_step_k
+    @vjp
+    def ode_heun_step_k(g, x, e, k):
+        val = lambda x : x._value if hasattr(x, '_value') else x
+        if hasattr(g, '_value'):
+            ret = ode_heun_step_k_np.f(g, xz, eta, K)
+            ret._value = ode_heun_step_k_jit(g._value, val(xz), val(eta), val(K), 1/tau0, SC, I1)
+            return ret
+        else:
+            return ode_heun_step_k_jit(g, xz, eta, K, 1/tau0, SC, I1)
+    ode_heun_step_k.jit = ode_heun_step_k_jit
+
 
     defvjp(ode_heun_step, ode_heun_step_x, ode_heun_step_e, ode_heun_step_k)
 
@@ -415,14 +492,34 @@ if custom_grads:
     check_grads(f_rk4_xz,modes=['rev'])(xz)
 
 def ode_heun_solve(dt, nt, xz_init, SC, I1, tau0, K, eta):
+    box = any([hasattr(_,'_value') for _ in (xz_init, SC, I1, tau0, K, eta)])
     sol = [xz_init]
     for t in range(nt-1):
         xz = sol[-1]
-        # xz_next = ode_heun_step(dt, t*dt, xz, SC, I1, tau0, K, eta)
-        xz_next = ode_heun_step(xz,eta,K)
+        if box:
+            xz_next = ode_heun_step(xz,eta,K)
+        else:
+            xz_next = ode_heun_step_jit(xz,eta,K,SC,I1,1/tau0)
         sol.append(xz_next)
     return np.array(sol)
 
+# TODO impl rev solve
+
+# set up jit version
+@jit
+def ode_heun_solve_jit(dt, nt, xz_init, SC, I1, tau0, K, eta):
+    sol = onp.zeros((nt,xz_init.size))
+    sol[0] = xz_init
+    for t in range(nt - 1):
+        sol[t+1] = ode_heun_step_jit(sol[t],eta,K,SC,I1,1/tau0)
+    return sol
+ode_heun_solve_np = ode_heun_solve
+def ode_heun_solve(dt, nt, xz_init, SC, I1, tau0, K, eta):
+    box = any([hasattr(_,'_value') for _ in (xz_init, SC, I1, tau0, K, eta)])
+    if box:
+        return ode_heun_solve_np(dt, nt, xz_init, SC, I1, tau0, K, eta)
+    else:
+        return ode_heun_solve_jit(dt, nt, xz_init, SC, I1, tau0, K, eta)
 
 def fwd_model(sol, gain, amp, off):
     nn = sol.shape[1] // 2
@@ -436,7 +533,7 @@ def target(seeg_hat, seeg, eps):
 
 def loss(params, data):
     sol = ode_heun_solve(
-        data['dt'], data['nt'], params['xz_init'],
+        data['dt'], data['nt'].item(), params['xz_init'],
         data['SC'], data['I1'], data['tau0'], params['K'], params['eta'])
     seeg_hat = fwd_model(sol, data['gain'], params['amp'], params['off'])
     loss = -1 * target(seeg_hat, data['seeg'], params['eps'])
@@ -471,7 +568,9 @@ params = {
 bench=True
 if bench:
     nr = 10
+    loss(params,data)
     et = timeit.timeit('loss(params, data)', globals=globals(), number=nr)
     print(f'loss\t{et/nr*1e3:0.3f} ms')
+    grad_loss(params,data)
     et = timeit.timeit('grad_loss(params, data)', globals=globals(), number=nr)
     print(f'gloss\t{et/nr*1e3:0.3f} ms')
