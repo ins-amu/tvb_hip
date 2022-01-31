@@ -2,16 +2,30 @@
 #include <stan/math.hpp>
 #include <stan/math/rev/core/reverse_pass_callback.hpp>
 
-namespace bvep2_model_namespace {
+namespace bvep3_model_namespace {
 
 using namespace stan;
 using namespace stan::math;
 using namespace Eigen;
 using namespace std;
 
+#define T(e) (e).transpose()
+
+// https://stackoverflow.com/a/27375675
+template <typename Arg, typename... Args>
+void print(Arg&& arg, Args&&... args)
+{
+    std::cout << std::forward<Arg>(arg);
+    using expander = int[];
+    (void)expander{0, (void(std::cout << std::forward<Args>(args)), 0)...};
+    std::cout << std::endl;
+}
+
+#define dbgvar(v) print("[ode_step_rev] " #v " = ", T(v), " adj ", T(v.adj()), " adj_op ", T(v.adj_op()))
+
 // fwd pass
-template <typename Mat, typename Mat2>
-VectorXd ode_rhs_c(const double time, const Mat& xz, const Mat2& SC, 
+template <typename Mat, typename Mat2, typename Mat3>
+VectorXd ode_rhs_c(const double time, const Mat3& xz, const Mat2& SC, 
 		const double I1, const double tau0, const double K,
 		const Mat& eta, ostream* pstream) {
 	int nn = xz.size() / 2;
@@ -29,16 +43,19 @@ VectorXd ode_rhs_c(const double time, const Mat& xz, const Mat2& SC,
 	return dxz;
 }
 
-// rev as separate function for reuse
-template <typename VarMat, typename Var, typename Mat>
+// reusable reverse mode vjp
+template <typename VarMat, typename VarMat2, typename Var, typename Mat>
 inline auto ode_rhs_rev(
-		int nn, VarMat& dxz_a, VarMat& xz_a, VarMat& eta_a,
+		int nn, VarMat& dxz_a, VarMat2& xz_a, VarMat& eta_a,
 	       	Var& K_a, Mat& SC_a, double rtau0, double I1) {
-	auto g = dxz_a.adj_op();
-	auto g_dx = g.head(nn), g_dz = g.tail(nn);
-	auto x = value_of(xz_a.head(nn));
+	VectorXd g = dxz_a.adj_op();
+	VectorXd g_dx = g.head(nn), g_dz = g.tail(nn);
+	VectorXd x = value_of(xz_a.head(nn));
 	eta_a.adj() += -g_dz.tail(nn)*rtau0*4;
-	K_a.adj() += -(g_dz.array()*(SC_a*x).array()).sum() * rtau0;
+	VectorXd gx = SC_a * x;
+	double ksum = 0.0;
+	for (int i=0;i<nn;i++) ksum += g_dz(i)*gx(i);
+	K_a.adj() -= ksum * rtau0;
 	VectorXd g_x(xz_a.size());
 	g_x.fill(0.0);
 	g_x.head(nn).array() += g_dx.array()*(-3*x.array().square() - 4*x.array());
@@ -57,8 +74,6 @@ VarMat ode_rhs_c(const double time, const VarMat& xz, const Mat& SC,
 	int nn = xz.size() / 2;
 	double rtau0 = 1.0 / tau0;
 	// call fwd pass impl
-	//typename decltype(value_of(xz))::foo bar;
-	//typename decltype(SC)::foo bar2;
 	VectorXd dxz_val = ode_rhs_c(
 			time, value_of(xz), SC, I1, tau0, 
 			value_of(K), value_of(eta), pstream);
@@ -74,6 +89,70 @@ VarMat ode_rhs_c(const double time, const VarMat& xz, const Mat& SC,
 	});
 	// return results
 	return dxz_;
+}
+
+// fwd pass
+template <typename Mat, typename Mat2>
+VectorXd ode_step_c(const double time, const double dt, const Mat& xz,
+		const Mat2& SC, 
+		const double I1, const double tau0, const double K,
+		const Mat& eta, ostream* pstream) {
+	VectorXd d1 = ode_rhs_c(time, xz, SC, I1, tau0, K, eta, pstream);
+	VectorXd d2 = ode_rhs_c(time, xz + dt * d1, SC, I1, tau0, K, eta, pstream);
+	return xz + dt/2*(d1 + d2);
+}
+
+// reusable reverse mode vjp
+template <typename VarMat, typename Var, typename Mat>
+void ode_step_rev(
+		int nn, double dt, VarMat& nx, VarMat& xz, VarMat& eta,
+	       	Var& K, Mat& SC, double rtau0, double I1)
+{
+	// 1st state of Heun needed for the VJP
+	auto d1 = ode_rhs_c(0.0, value_of(xz), SC, I1, 1/rtau0, 
+			value_of(K), value_of(eta), nullptr);
+	// nx = ode_step_c(), nx.adj() is V of VJP
+        // nx = x + dt/2*(d1 + d2)
+	arena_t<VarMat> g_d1(nx*dt/2);
+	arena_t<VarMat> g_d2(nx*dt/2);
+	g_d1.adj() = nx.adj()*dt/2;
+	g_d2.adj() = nx.adj()*dt/2;
+	xz.adj() += nx.adj();
+        // d2 = ode_rhs(x + dt*d1, e, k)
+	arena_t<VarMat> xzi(xz + dt*d1);
+        ode_rhs_rev(nn, g_d2, xzi, eta, K, SC, rtau0, I1);
+	xz.adj() += xzi.adj();
+	g_d1.adj() += xzi.adj() * dt;
+        // d1 = ode_rhs(x, e, k)
+        ode_rhs_rev(nn, g_d1, xz, eta, K, SC, rtau0, I1);
+	// xz.adj() += xz.adj()? no need
+}
+
+// fwd + reverse when args are var types
+template <typename VarMat, typename Var, typename Mat,
+	  require_rev_matrix_t<VarMat>* = nullptr >
+VarMat ode_step_c(const double time, const double dt, const VarMat& xz,
+		const Mat& SC,
+          const double I1, const double tau0, const Var& K,
+          const VarMat& eta, ostream* pstream) { 
+	int nn = xz.size() / 2;
+	double rtau0 = 1.0 / tau0;
+	// call fwd pass impl
+	VectorXd nx = ode_step_c(
+			time, dt, value_of(xz), SC, I1, tau0, 
+			value_of(K), value_of(eta), pstream);
+	VarMat ret(nx);
+	// construct bwd pass
+	arena_t<VarMat> nx_a(ret);
+	arena_t<VarMat> xz_a(xz);
+	arena_t<VarMat> eta_a(eta);
+	arena_t<Var> K_a(K);
+	arena_t<Mat> SC_a(SC);
+	reverse_pass_callback([nn, dt, nx_a, xz_a, eta_a, K_a, SC_a, rtau0, I1]() mutable {
+		ode_step_rev(nn, dt, nx_a, xz_a, eta_a, K_a, SC_a, rtau0, I1);
+	});
+	// return results
+	return ret;
 }
 
 } // bvep2_model_namespace
