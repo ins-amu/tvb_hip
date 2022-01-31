@@ -21,16 +21,9 @@ functions {
 
   vector ode_step_c(real time, real dt, vector xz, matrix SC, real I1, real tau0, real K, vector eta);
 
-matrix ode_heun_solve_c(real dt, int nt, vector xz, matrix SC, real I1, real tau0, real K, vector eta) {
-    matrix[rows(xz),nt] sol;
-    sol[,1] = xz;
-    for (t in 1:(nt - 1)) {
-      sol[,t+1] = ode_step_c(t*dt, dt, sol[,t], SC, I1, tau0, K, eta);
-    }
-    return sol;
-  }
+  matrix ode_sol_c(real dt, int nt, vector xz, matrix SC, real I1, real tau0, real K, vector eta);
 
-matrix ode_heun_solve(real dt, int nt, vector xz, matrix SC, real I1, real tau0, real K, vector eta) {
+  matrix ode_sol(real dt, int nt, vector xz, matrix SC, real I1, real tau0, real K, vector eta) {
     matrix[rows(xz),nt] sol;
     sol[,1] = xz;
     for (t in 1:(nt - 1)) {
@@ -127,10 +120,10 @@ model {
   eps_star ~ normal(0.,1.);
 
   if (ode_solve_order == 2) {
-    matrix[2*nn,nt] sol = ode_heun_solve(dt, nt, append_row(x_init, z_init), SC, I1, tau0, K, eta);
+    matrix[2*nn,nt] sol = ode_sol(dt, nt, append_row(x_init, z_init), SC, I1, tau0, K, eta);
     x = sol[1:nn,];
   } else if (ode_solve_order == 20) {
-    matrix[2*nn,nt] sol = ode_heun_solve_c(dt, nt, append_row(x_init, z_init), SC, I1, tau0, K, eta);
+    matrix[2*nn,nt] sol = ode_sol_c(dt, nt, append_row(x_init, z_init), SC, I1, tau0, K, eta);
     x = sol[1:nn,];
   }  
 
@@ -153,7 +146,7 @@ generated quantities {
   vector[nt*ns] log_lik;
   vector[nt] log_lik_sum = rep_vector(0,nt);  
 
-    matrix[2*nn,nt] sol = ode_heun_solve(dt, nt, append_row(x_init, z_init), SC, I1, tau0, K, eta);
+    matrix[2*nn,nt] sol = ode_sol(dt, nt, append_row(x_init, z_init), SC, I1, tau0, K, eta);
     x = sol[1:nn,];
     z = sol[nn+1:,];
 

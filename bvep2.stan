@@ -20,14 +20,7 @@ functions {
 
   vector ode_step_c(real time, real dt, vector xz, matrix SC, real I1, real tau0, real K, vector eta);
 
-  matrix ode_sol_c(real dt, int nt, vector xz, matrix SC, real I1, real tau0, real K, vector eta) {
-    matrix[rows(xz),nt] sol;
-    sol[,1] = xz;
-    for (t in 1:(nt - 1)) {
-      sol[,t+1] = ode_step_c(t*dt, dt, sol[,t], SC, I1, tau0, K, eta);
-    }
-    return sol;
-  }
+  matrix ode_sol_c(real dt, int nt, vector xz, matrix SC, real I1, real tau0, real K, vector eta);
 
   matrix ode_sol(real dt, int nt, vector xz, matrix SC, real I1, real tau0, real K, vector eta) {
     matrix[rows(xz),nt] sol;

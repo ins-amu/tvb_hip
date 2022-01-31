@@ -1,11 +1,12 @@
-bvep2: bvep2.stan bvep2inc.hpp
-	rm bvep2 || true
-	CXXFLAGS='-g -Og' STANCFLAGS='--allow-undefined' USER_HEADER=$$PWD/bvep2inc.hpp make -C ~/.cmdstan/cmdstan-2.28.2/ $$PWD/bvep2
-
 bvep3: bvep3.stan bvep2inc.hpp
 	rm bvep3 || true
 	#CXXFLAGS='-g -Og'
 	STANCFLAGS='--allow-undefined' USER_HEADER=$$PWD/bvep2inc.hpp make -C ~/.cmdstan/cmdstan-2.28.2/ $$PWD/bvep3
+
+bvep2: bvep2.stan bvep2inc.hpp
+	rm bvep2 || true
+	#CXXFLAGS='-g -Og'
+	STANCFLAGS='--allow-undefined' USER_HEADER=$$PWD/bvep2inc.hpp make -C ~/.cmdstan/cmdstan-2.28.2/ $$PWD/bvep2
 
 
 bvep_: bvep_.stan use_bvep.hpp bvep.o

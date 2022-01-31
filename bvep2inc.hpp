@@ -2,7 +2,7 @@
 #include <stan/math.hpp>
 #include <stan/math/rev/core/reverse_pass_callback.hpp>
 
-namespace bvep2_model_namespace {
+namespace bvep3_model_namespace {
 
   // namespaces
   using namespace stan;
