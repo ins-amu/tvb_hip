@@ -22,6 +22,9 @@ curl -L https://github.com/jupyterlab/jupyterlab_app/archive/refs/tags/v${jlabap
 ln -s $PWD/jupyterlab-desktop-${jlabappver} jupyterlab_app 
 
 pushd jupyterlab_app 
+conda update -y nodejs
+which node
+node --version
 yarn install 
 yarn build 
 yarn create_env_installer:linux
