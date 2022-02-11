@@ -13,7 +13,7 @@ def upload(fname):
     # file is too big to naively put
     # with open(fname, 'rb') as fd:
     #     resp = requests.put(ul_url, data=fd.read())
-    cmd = f"curl '{ul_url}' --upload-file '{fname}'"
+    cmd = f"curl --progress-bar '{ul_url}' --upload-file '{fname}'"
     print(repr(cmd))
     os.system(cmd)
 
@@ -28,7 +28,7 @@ def get_token():
 
 def put_image():
     # docker run --rm -it -v $PWD:/export hip bash -c 'apt-get install -y pigz && tar cf - /apps/tvb-hip | pigz -c > /export/tvb-hip-app.tar.gz2'
-    upload('tvb-hip-app.tar.gz2')
+    upload('app.tar.gz')
 
 if __name__ == '__main__':
     put_image()
