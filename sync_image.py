@@ -17,6 +17,17 @@ def upload(fname):
     print(repr(cmd))
     os.system(cmd)
 
+def download(fname):
+    hdr = {'Authorization': 'Bearer ' + get_token()}
+    ul_url = requests.get(api + f'buckets/hip-tvb-app/{fname}', headers=hdr).json()['url']
+    print(repr(ul_url))
+    # file is too big to naively put
+    # with open(fname, 'rb') as fd:
+    #     resp = requests.put(ul_url, data=fd.read())
+    cmd = f"curl --progress-bar -LO '{ul_url}'"
+    print(repr(cmd))
+    os.system(cmd)
+
 def get_token():
     if 'EBRAINS_TOKEN' in os.environ:
         return os.environ['EBRAINS_TOKEN']
@@ -31,4 +42,5 @@ def put_image():
     upload('app.tar.gz')
 
 if __name__ == '__main__':
-    put_image()
+    #put_image()
+    download('app.tar.gz')
