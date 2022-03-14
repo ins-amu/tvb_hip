@@ -9,7 +9,7 @@ api = 'https://data-proxy.ebrains.eu/api/'
 
 def upload(fname):
     hdr = {'Authorization': 'Bearer ' + get_token()}
-    ul_url = requests.put(api + f'buckets/hip-tvb-app/{fname}', headers=hdr).json()['url']
+    ul_url = requests.put(api + f'buckets/hip-tvb-app/{fname}', params={'redirect':'false'}, headers=hdr).json()['url']
     # file is too big to naively put
     # with open(fname, 'rb') as fd:
     #     resp = requests.put(ul_url, data=fd.read())
@@ -19,7 +19,7 @@ def upload(fname):
 
 def download(fname):
     hdr = {'Authorization': 'Bearer ' + get_token()}
-    ul_url = requests.get(api + f'buckets/hip-tvb-app/{fname}', headers=hdr).json()['url']
+    ul_url = requests.get(api + f'buckets/hip-tvb-app/{fname}', params={'redirect':'false'}, headers=hdr).json()['url']
     print(repr(ul_url))
     # file is too big to naively put
     # with open(fname, 'rb') as fd:
