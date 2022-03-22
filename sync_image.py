@@ -39,8 +39,8 @@ def get_token():
 
 def put_image():
     # docker run --rm -it -v $PWD:/export hip bash -c 'apt-get install -y pigz && tar cf - /apps/tvb-hip | pigz -c > /export/tvb-hip-app.tar.gz2'
-    upload('app.tar.gz')
+    upload('tvb-hip-app.tar.gz2')
 
 if __name__ == '__main__':
-    #put_image()
-    download('app.tar.gz')
+    # put_image()
+    download('tvb-hip-app.tar.gz2')
