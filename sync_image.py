@@ -19,7 +19,13 @@ def upload(fname):
 
 def download(fname):
     hdr = {'Authorization': 'Bearer ' + get_token()}
-    ul_url = requests.get(api + f'buckets/hip-tvb-app/{fname}', params={'redirect':'false'}, headers=hdr).json()['url']
+    dl_url_resp = requests.get(api + f'buckets/hip-tvb-app/{fname}', params={'redirect':'false'}, headers=hdr)
+    ul_url = None
+    try:
+        ul_url = dl_url_resp.json()['url']
+    except KeyError as e:
+        raise Exception(f'could not get temp url for app image via EBRAINS data proxy: "{dl_url_resp.text}". '
+                         'Please check your EBRAINS_TOKEN.')
     print(repr(ul_url))
     # file is too big to naively put
     # with open(fname, 'rb') as fd:
