@@ -1,4 +1,4 @@
-FROM hip:stage2
+FROM hip-tvb:stage1
 
 # prereq bbwarp is mnic & workbench
 WORKDIR /apps/tvb-hip
@@ -11,16 +11,18 @@ RUN curl -L https://www.humanconnectome.org/storage/app/media/workbench/workbenc
 RUN apt-get install -y unzip && unzip wb.zip
 
 # bigwarp https://bigbrainwarp.readthedocs.io/en/latest/pages/scripts.html
-ADD BigBrainWarp /apps/tvb-hip/bbwarp
+# ADD BigBrainWarp /apps/tvb-hip/bbwarp
 
 ENV bbwDir=/apps/tvb-hip/bbwarp
 ENV mnc2Path=/apps/tvb-hip/minc
 ENV icbmTemplate=$bbwDir/spaces/tpl-icbm/tpl-icbm_desc-t1_tal_nlin_sym_09c_mask.mnc
-ENV wbPath=/apps/tvb-hip/workbench
+ENV wbPath=/apps/tvb-hip/workbench/bin_linux64
 ENV PATH=$bbwDir:$bbwDir/scripts/:$mnc2Path/:$wbPath:$PATH
 ENV MATLABPATH=$bbwDir/scripts/:$MATLABPATH
 
-WORKDIR /apps/tvb-hip/bbwarp
-RUN bash scripts/downloads.sh
+# WORKDIR /apps/tvb-hip/bbwarp
+# RUN bash scripts/downloads.sh
+ENV PATH=/apps/tvb-hip/jlab_server/bin:$PATH
+RUN pip3 install snakemake
 
 WORKDIR /work
