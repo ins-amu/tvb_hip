@@ -6,12 +6,32 @@ diagram shows the functional structure:
 
 ![](app.png)
 
-## TODO
+## Setup
 
-- extend software support for all workflows
-- split each software into its own dockerfile + setup-env.sh script
-- implement an octopus merge for individual containers
+The app consists of a `tvb_hip` Python module and template Jupyter notebooks.
 
+The Python code assumes that a variety of tools are already installed:
 
-may want to set up a castor vm to do the build process
-just because internet is slow here..?
+- Freesurfer
+- FSL
+- Mrtrix3
+- Python + JupyterLab and all dependencies
+
+Data is processed inside temporary FreeSurfer `$SUBJECTS_DIR/$SUBJECT` folders.
+
+## Local setup
+
+For local development, I install the above tools, use a virtualenv for the Python
+environment, and use Jupyter via a normal browser. 
+
+This environment requires synchronizing some data via nextcloud client somewhere
+on disk, and then the `tvb_hip` module should pick up via env var `hip_nextcloud`.
+
+## HIP
+
+For HIP, a Docker image contains the above tools + JupyterLab Desktop. 
+
+HIP data is always present under `~/nextcloud`.
+
+This setup is a little more fragile since it requires setting up the correct environment
+through container files like jupyter config.
