@@ -1,5 +1,0 @@
-numpy
-nibabel
-scipy
-joblib
-numba
