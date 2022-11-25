@@ -11,6 +11,8 @@ joblib = "*"
 snakemake = "*"
 ipykernel = "*"
 requests = "*"
+jupyterlab = "*"
+datalad = "*"
 
 [dev-packages]
 pytest = "*"

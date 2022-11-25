@@ -35,3 +35,27 @@ HIP data is always present under `~/nextcloud`.
 
 This setup is a little more fragile since it requires setting up the correct environment
 through container files like jupyter config.
+
+## Job queue
+
+The tasks in this app are long running:
+
+- FreeSurfer takes 6-12 hours
+- Tractography is 4-8 hours
+- Model inversion is 4-8 hours
+
+Running these processes directly out of notebooks, or in separate terminals is
+one approach: the Jupyter server or terminal emulator becomes the parent process.
+
+Another possibility is using a task queue with a supervisor process:
+
+- supervisor
+  - jupyter lab
+  - terminal
+  - redis/rabbitmq
+  - worker1
+  - worker2
+  - workerN
+
+Once all these are started, the terminal or jupyter api allow user to
+submit work.
