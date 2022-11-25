@@ -12,7 +12,7 @@ mkdir $buildtest
 
 # create app in new folder
 pushd $build
-pip install --target tvb_hip nibabel  # dependencies that may not be available
+# pip install --target tvb_hip nibabel  # dependencies that may not be available
 cp -r ../tvb_hip tvb_hip/
 echo '
 import tvb_hip.cli as cli

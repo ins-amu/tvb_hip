@@ -3,3 +3,5 @@ bvep.hpp
 .ipynb_checkpoints
 *.log
 __pycache__
+build
+buildtest
