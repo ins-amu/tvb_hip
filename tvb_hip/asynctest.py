@@ -1,3 +1,10 @@
+"""
+Some async stuff for workflow support.  This has to work in the notebook however. 
+
+"""
+
+# TODO test from notebook
+
 import asyncio
 
 async def a(input):
