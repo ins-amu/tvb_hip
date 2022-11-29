@@ -13,6 +13,9 @@ ipykernel = "*"
 requests = "*"
 jupyterlab = "*"
 datalad = "*"
+typed-args = "*"
+matplotlib = "*"
+mne = "*"
 
 [dev-packages]
 pytest = "*"

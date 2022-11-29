@@ -24,7 +24,7 @@ class Site:
         if home is None:
             logger.warn('%s has no home set!', tool)
         else:
-            logger.info('%s in %s', tool, home)
+            logger.debug('%s in %s', tool, home)
 
     @functools.cached_property
     def fsl_env(self):
@@ -41,7 +41,7 @@ diff tmp1 tmp2 | grep '>' | sed 's,^> ,,g'
         for line in stdout.decode('ascii').strip().split('\n'):
             key, val = line.strip().split("=")
             fsl_env[key] = val
-        logger.info('fsl env is %r', fsl_env)
+        logger.debug('fsl env is %r', fsl_env)
         return fsl_env
 
     @functools.cached_property
@@ -49,7 +49,7 @@ diff tmp1 tmp2 | grep '>' | sed 's,^> ,,g'
         self._log_home('mrtrix', self.mrtrix_home)
         mrt_env = os.environ.copy()
         mrt_env['PATH'] = os.path.join(self.mrtrix_home, 'bin') + ':' + mrt_env['PATH']
-        logger.info('mrtrix env is %r', mrt_env)
+        logger.debug('mrtrix env is %r', mrt_env)
         return mrt_env
 
     @functools.cached_property
@@ -68,9 +68,8 @@ diff -b tmp1 tmp2 | grep '>' | grep -v '_=/usr/bin/env' | sed 's,^> ,,g'
         for line in stdout.decode('ascii').strip().split('\n'):
             key, val = line.strip().split("=")
             fs_env[key] = val
-        print(fs_env['PATH'])
         fs_env['PATH'] = ':'.join([fs_env.get('PATH', ''), f'{self.freesurfer_home}/bin:{self.freesurfer_home}/fsfast/bin:{self.freesurfer_home}/tktools:{self.freesurfer_home}/mni/bin'])
-        logging.info('freesurfer env is %r', fs_env)
+        logging.debug('freesurfer env is %r', fs_env)
         return fs_env
 
     def run_opts(self, env, cmd, *args, stdin=None):
@@ -78,7 +77,7 @@ diff -b tmp1 tmp2 | grep '>' | grep -v '_=/usr/bin/env' | sed 's,^> ,,g'
         maybe_stdin = {}
         if stdin is not None:
             maybe_stdin['stdin'] = subprocess.PIPE
-        logger.info('cmd = %r', cmd)
+        logger.debug('cmd = %r', cmd)
         proc = subprocess.Popen(
             cmd,
             env=env,
@@ -108,7 +107,7 @@ diff -b tmp1 tmp2 | grep '>' | grep -v '_=/usr/bin/env' | sed 's,^> ,,g'
             f(name)
             return True
         except Exception as exc:
-            logger.info('tool not ok %r', exc)
+            logger.warn('tool not ok %r', exc)
             return False
 
     @functools.cached_property
@@ -123,6 +122,9 @@ diff -b tmp1 tmp2 | grep '>' | grep -v '_=/usr/bin/env' | sed 's,^> ,,g'
     def fsl_ok(self):
         return self.tool_ok(self.fsl, 'flirt')
 
+    @property
+    def all_ok(self):
+        return self.fs_ok and self.fsl_ok and self.mrt_ok
 
 
 # might still work
