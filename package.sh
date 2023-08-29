@@ -2,6 +2,7 @@
 
 #python -m zipapp -p '/usr/bin/env python' -c tvb_hip
 #chmod +x tvb_hip.pyz
+set -eux
 
 build=build
 buildtest=buildtest
@@ -12,7 +13,7 @@ mkdir $buildtest
 
 # create app in new folder
 pushd $build
-# pip install --target tvb_hip nibabel  # dependencies that may not be available
+pip3 install --target tvb_hip scipy matplotlib nibabel mne webdav4  # dependencies that may not be available
 cp -r ../tvb_hip tvb_hip/
 echo '
 import tvb_hip.cli as cli
