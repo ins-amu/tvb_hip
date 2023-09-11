@@ -32,5 +32,5 @@ on disk, and then the `tvb_hip` module should pick up via env var `hip_nextcloud
 For HIP, a Docker image contains the above tools + JupyterLab Desktop,
 with data is present under `~/nextcloud`, available directly on the HIP platform:
 
-![](running-on-hip.md)
+![](running-on-hip.jpg)
 
